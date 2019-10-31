@@ -66,6 +66,16 @@ func TestIsTrue(t *testing.T) {
 			in:     map[string]interface{}{},
 			expect: true,
 		},
+		{
+			name:   "bool-true",
+			in:     true,
+			expect: true,
+		},
+		{
+			name:   "bool-true",
+			in:     false,
+			expect: false,
+		},
 	}
 
 	for _, st := range tests {

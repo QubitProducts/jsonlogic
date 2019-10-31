@@ -19,6 +19,8 @@ func IsTrue(i interface{}) bool {
 		return len(v) != 0
 	case string:
 		return v != ""
+	case bool:
+		return v
 	default:
 		panic(fmt.Errorf("unhandled type %T", i))
 	}
