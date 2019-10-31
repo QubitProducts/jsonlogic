@@ -28,13 +28,16 @@ func TestClauseEval(t *testing.T) {
 			name:      "invalid-clause",
 			rule:      `"hello"`,
 			marshalTo: `"hello"`,
-			expect:    `"hello"`,
+			expect:    "hello",
 		},
 		{
 			name:      "invalid-clause2",
 			rule:      `{"var":["a"],"hola":"thing"}`,
 			marshalTo: `{"hola":"thing","var":["a"]}`,
-			expect:    `{"hola":"thing","var":["a"]}`,
+			expect: map[string]interface{}{
+				"hola": "thing",
+				"var":  []interface{}{"a"},
+			},
 		},
 		{
 			name:      "always",
@@ -122,25 +125,28 @@ func TestClauseEval(t *testing.T) {
 				var c Clause
 				err := json.Unmarshal([]byte(st.rule), &c)
 				if st.expErr != "" {
-					assert.EqualError(t, err, st.expErr)
+					assert.EqualErrorf(t, err, st.expErr, "unmarshal error")
 					return
 				} else {
-					assert.NoError(t, err)
+					assert.NoErrorf(t, err, "unmarshal error")
 				}
 
 				marshalTo, err := json.Marshal(c)
-				assert.NoError(t, err)
-				assert.Equal(t, st.marshalTo, string(marshalTo))
+				assert.NoErrorf(t, err, "marshal error")
+				assert.Equalf(t, st.marshalTo, string(marshalTo), "re-marshaled clause")
 
-				/*
-					v, err := c.Eval(st.data)
-					assert.EqualError(t, err, st.expErr)
+				cf, err := c.Compile()
+				if st.expErr != "" {
+					assert.EqualErrorf(t, err, st.expErr, "compile error")
 					if err != nil {
 						return
 					}
+				} else {
+					assert.NoErrorf(t, err, "compile error")
+				}
 
-					assert.Equal(t, v, st.expect)
-				*/
+				v := cf(st.data)
+				assert.Equalf(t, st.expect, v, "response data")
 			})
 		})
 	}
