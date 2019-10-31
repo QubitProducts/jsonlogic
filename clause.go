@@ -78,56 +78,39 @@ type Clause struct {
 // UnmarshalJSON parses JSON data as a jsonlogic
 // Clause.
 func (c *Clause) UnmarshalJSON(bs []byte) error {
-	raw := map[string]Arguments{}
-	maperr := json.Unmarshal(bs, &raw)
-	if maperr == nil {
-		if len(raw) != 1 {
-			return fmt.Errorf("too many keys for a clause, should be 1")
-		}
-		for k, v := range raw {
+	clause := map[string]Arguments{}
+	err := json.Unmarshal(bs, &clause)
+	if err == nil && len(clause) == 1 {
+		for k, v := range clause {
 			*c = Clause{
 				Operator: Operator{
 					Name: k,
 				},
 				Arguments: v,
 			}
+			return nil
 		}
-		return nil
 	}
 
-	var truthy bool
-	trutherr := json.Unmarshal(bs, &truthy)
-	if trutherr == nil {
-		opName := "Never"
-		if truthy {
-			opName = "Always"
-		}
-		*c = Clause{
-			Operator: Operator{
-				Name: opName,
-			},
-		}
-		return nil
+	var raw interface{}
+	err = json.Unmarshal(bs, &raw)
+	if err != nil {
+		return err
 	}
-
-	switch {
-	case maperr != nil:
-		return fmt.Errorf("jsonlogic parse: %w", maperr)
-	case trutherr != nil:
-		return fmt.Errorf("jsonlogic parse: %w", trutherr)
-	default:
-		return fmt.Errorf("jsonlogic parse: could not parse as valid clause")
+	*c = Clause{
+		Arguments: []Argument{{
+			Value: raw,
+		}},
 	}
+	return nil
 }
 
 // MarshalJSON marshals a jsonlogic Clause into
 // pure JSON.
 func (c Clause) MarshalJSON() ([]byte, error) {
 	switch c.Operator.Name {
-	case "Always":
-		return json.Marshal(true)
-	case "Never":
-		return json.Marshal(false)
+	case "":
+		return json.Marshal(c.Arguments[0].Value)
 	default:
 		return json.Marshal(map[string]Arguments{
 			c.Operator.Name: c.Arguments,
@@ -135,16 +118,13 @@ func (c Clause) MarshalJSON() ([]byte, error) {
 	}
 }
 
-/*
-// EvalJSON evluates this clause against the supplied
-// data. The data is parsed as json, and raw json
-// is returned.
-func (c *Clause) CpompileJSON(data []byte) ([]byte, error) {
-	panic("not implemented")
-}
+// ClauseFunc takes input data, returns a result which
+// could be any valid json type. jsonlogic seems to
+// prefer returning null to returning any specific errors.
+type ClauseFunc func(data interface{}) interface{}
 
-// Eval evaluates this clause against the provided data.
-func (c *Clause) Compile(data interface{}) (interface{}, error) {
+// Compile builds a ClauseFunc that will execute
+// the provided rule against the data.
+func (c *Clause) Compile() (ClauseFunc, error) {
 	panic("not implemented")
 }
-*/

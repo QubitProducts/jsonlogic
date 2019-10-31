@@ -24,11 +24,17 @@ func TestClauseEval(t *testing.T) {
 			expect: true,
 			expErr: "unexpected end of JSON input",
 		},
+		{ // invalid clause, but valid JSON, should return the thing passed in.
+			name:      "invalid-clause",
+			rule:      `"hello"`,
+			marshalTo: `"hello"`,
+			expect:    `"hello"`,
+		},
 		{
-			name:   "invalid-clause",
-			rule:   `"hello"`,
-			expect: true,
-			expErr: "jsonlogic parse: json: cannot unmarshal string into Go value of type map[string]jsonlogic.Arguments",
+			name:      "invalid-clause2",
+			rule:      `{"var":["a"],"hola":"thing"}`,
+			marshalTo: `{"hola":"thing","var":["a"]}`,
+			expect:    `{"hola":"thing","var":["a"]}`,
 		},
 		{
 			name:      "always",
