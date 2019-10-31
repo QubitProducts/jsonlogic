@@ -65,6 +65,12 @@ func TestClauseEval(t *testing.T) {
 			expect:    true,
 		},
 		{
+			name:      "simple-uncoerced",
+			rule:      `{ "===" : [1, 1] }`,
+			marshalTo: `{"===":[1,1]}`,
+			expect:    true,
+		},
+		{
 			name: "compound",
 			rule: `{"and" : [
 								 { ">" : [3,1] },
