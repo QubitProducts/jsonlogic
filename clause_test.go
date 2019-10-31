@@ -135,7 +135,7 @@ func TestClauseEval(t *testing.T) {
 				assert.NoErrorf(t, err, "marshal error")
 				assert.Equalf(t, st.marshalTo, string(marshalTo), "re-marshaled clause")
 
-				cf, err := c.Compile()
+				cf, err := Compile(&c)
 				if st.expErr != "" {
 					assert.EqualErrorf(t, err, st.expErr, "compile error")
 					if err != nil {

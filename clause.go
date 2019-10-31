@@ -125,7 +125,7 @@ type ClauseFunc func(data interface{}) interface{}
 
 // Compile builds a ClauseFunc that will execute
 // the provided rule against the data.
-func (c *Clause) Compile() (ClauseFunc, error) {
+func Compile(c *Clause) (ClauseFunc, error) {
 	if c.Operator.Name == "" {
 		return func(data interface{}) interface{} {
 			return c.Arguments[0].Value
