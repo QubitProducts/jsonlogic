@@ -2,6 +2,7 @@ package jsonlogic
 
 import (
 	"fmt"
+	"math"
 	"reflect"
 )
 
@@ -10,25 +11,25 @@ const (
 	nullOp = ""
 
 	//  var
-	varOp         = "var"
+	varOp         = "var"          // TODO - full path
 	missingOp     = "missing"      // TODO
 	missingSomeOp = "missing_some" // TODO
 
 	// Logic
-	ifOp            = "if" // TODO
-	equalOp         = "=="
+	ifOp            = "if"
+	equalOp         = "==" // TODO - coercion
 	equalThreeOp    = "==="
 	notEqualOp      = "!="  // TODO
 	notEqualThreeOp = "!==" // TODO
 	notOp           = "!"   // TODO
 	notTwoOp        = "!!"  // TODO
 	orOp            = "or"  // TODO
-	andOp           = "and" // TODO
+	andOp           = "and"
 
 	// Numeric
-	greaterOp   = ">"   // TODO
+	greaterOp   = ">"   // TODO - non float
 	greaterEqOp = ">="  // TODO
-	lessOp      = "<"   // TODO
+	lessOp      = "<"   // TODO - non float
 	lessEqOpOp  = "<="  // TODO
 	maxOp       = "max" // TODO
 	minOp       = "min" // TODO
@@ -38,7 +39,7 @@ const (
 	minusOp    = "-" // TODO
 	multiplyOp = "*" // TODO
 	divideOp   = "/" // TODO
-	modOp      = "%" // TODO
+	moduloOp   = "%"
 
 	// String operations
 	inOp     = "in"     // TODO
@@ -172,9 +173,10 @@ func buildIfOpMulti(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	return func(data interface{}) interface{} {
 		last := 0
 		for i := 0; i <= len(termArgs)/2; i++ {
-			lval := termArgs[i](data)
+			lval := termArgs[i*2](data)
 			if IsTrue(lval) {
-				return termArgs[i+1](data)
+				rval := termArgs[i*2+1](data)
+				return rval
 			}
 			last += 2
 		}
@@ -384,6 +386,36 @@ func buildEqualThreeOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	}, nil
 }
 
+func buildModuloOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	if len(args) < 2 {
+		return func(data interface{}) interface{} {
+			return nil
+		}, nil
+	}
+
+	lArg, err := buildArgFunc(args[0], ops)
+	if err != nil {
+		return nil, err
+	}
+	rArg, err := buildArgFunc(args[1], ops)
+	if err != nil {
+		return nil, err
+	}
+
+	return func(data interface{}) interface{} {
+		lVal := lArg(data)
+		rVal := rArg(data)
+
+		lFloat, lisfloat := lVal.(float64)
+		rFloat, risfloat := rVal.(float64)
+		if lisfloat && risfloat {
+			return math.Mod(lFloat, rFloat)
+		}
+
+		panic("modulo disjoint types not implemented")
+	}, nil
+}
+
 func (ops OpsSet) Compile(c *Clause) (ClauseFunc, error) {
 	bf, ok := ops[c.Operator.Name]
 	if !ok {
@@ -401,6 +433,7 @@ var DefaultOps = OpsSet{
 	equalThreeOp: buildEqualThreeOp,
 	lessOp:       buildLessOp,
 	greaterOp:    buildGreaterOp,
+	moduloOp:     buildModuloOp,
 }
 
 // ClauseFunc takes input data, returns a result which

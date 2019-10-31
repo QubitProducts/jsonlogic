@@ -128,7 +128,8 @@ func TestClauseEval(t *testing.T) {
 								{ "var": "i" }
 							 ]}`,
 			marshalTo: `{"if":[{"==":[{"%":[{"var":["i"]},15]},0]},"fizzbuzz",{"==":[{"%":[{"var":["i"]},3]},0]},"fizz",{"==":[{"%":[{"var":["i"]},5]},0]},"buzz",{"var":["i"]}]}`,
-			data:      20,
+			expect:    "buzz",
+			data:      map[string]interface{}{"i": float64(20)},
 		},
 	}
 
