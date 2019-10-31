@@ -2,6 +2,7 @@ package jsonlogic
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 )
 
@@ -26,12 +27,12 @@ const (
 	andOp           = "and" // TODO
 
 	// Numeric
-	greater   = ">"   // TODO
-	greaterEq = ">="  // TODO
-	less      = "<"   // TODO
-	lessEqOp  = "<="  // TODO
-	maxOp     = "max" // TODO
-	minOp     = "min" // TODO
+	greaterOp   = ">"   // TODO
+	greaterEqOp = ">="  // TODO
+	lessOp      = "<"   // TODO
+	lessEqOpOp  = "<="  // TODO
+	maxOp       = "max" // TODO
+	minOp       = "min" // TODO
 
 	// Array operations
 	plusOp     = "+" // TODO
@@ -229,7 +230,106 @@ func buildEqualOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		lVal := lArg(data)
 		rVal := rArg(data)
 
+		log.Printf("lval: %v rval: %v", lVal, rVal)
 		return fmt.Sprintf("%v", lVal) == fmt.Sprintf("%v", rVal)
+	}, nil
+}
+
+func buildGreaterOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	switch {
+	case len(args) == 0:
+		return func(data interface{}) interface{} {
+			return false
+		}, nil
+	case len(args) == 1:
+		return func(data interface{}) interface{} {
+			return false
+		}, nil
+	}
+
+	lArg, err := buildArgFunc(args[0], ops)
+	if err != nil {
+		return nil, err
+	}
+	rArg, err := buildArgFunc(args[1], ops)
+	if err != nil {
+		return nil, err
+	}
+
+	return func(data interface{}) interface{} {
+		lVal := lArg(data)
+		rVal := rArg(data)
+
+		lFloat, lisfloat := lVal.(float64)
+		rFloat, risfloat := rVal.(float64)
+		if lisfloat && risfloat {
+			return lFloat > rFloat
+		}
+
+		panic("greater than disjoint types not implemented")
+	}, nil
+}
+
+func buildBetweenExOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	lArg, err := buildArgFunc(args[0], ops)
+	if err != nil {
+		return nil, err
+	}
+	mArg, err := buildArgFunc(args[1], ops)
+	if err != nil {
+		return nil, err
+	}
+	rArg, err := buildArgFunc(args[2], ops)
+	if err != nil {
+		return nil, err
+	}
+
+	return func(data interface{}) interface{} {
+		lVal := lArg(data)
+		mVal := mArg(data)
+		rVal := rArg(data)
+
+		lFloat, lisfloat := lVal.(float64)
+		mFloat, misfloat := mVal.(float64)
+		rFloat, risfloat := rVal.(float64)
+		if lisfloat && misfloat && risfloat {
+			return lFloat < mFloat && mFloat < rFloat
+		}
+
+		panic("less than disjoint types not implemented")
+	}, nil
+}
+
+func buildLessOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	if len(args) < 2 {
+		return func(data interface{}) interface{} {
+			return false
+		}, nil
+	}
+	if len(args) >= 3 {
+		return buildBetweenExOp(args, ops)
+	}
+
+	lArg, err := buildArgFunc(args[0], ops)
+	if err != nil {
+		return nil, err
+	}
+	rArg, err := buildArgFunc(args[1], ops)
+	if err != nil {
+		return nil, err
+	}
+
+	return func(data interface{}) interface{} {
+		lVal := lArg(data)
+		rVal := rArg(data)
+
+		lFloat, lisfloat := lVal.(float64)
+		rFloat, risfloat := rVal.(float64)
+		if lisfloat && risfloat {
+			return lFloat < rFloat
+		}
+
+		panic("less than disjoint types not implemented")
 	}, nil
 }
 
@@ -277,6 +377,8 @@ var DefaultOps = OpsSet{
 	andOp:        buildAndOp,
 	equalOp:      buildEqualOp,
 	equalThreeOp: buildEqualThreeOp,
+	lessOp:       buildLessOp,
+	greaterOp:    buildGreaterOp,
 }
 
 // ClauseFunc takes input data, returns a result which
