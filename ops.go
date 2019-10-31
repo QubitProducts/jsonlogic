@@ -2,7 +2,6 @@ package jsonlogic
 
 import (
 	"fmt"
-	"log"
 	"reflect"
 )
 
@@ -230,7 +229,6 @@ func buildEqualOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		lVal := lArg(data)
 		rVal := rArg(data)
 
-		log.Printf("lval: %v rval: %v", lVal, rVal)
 		return fmt.Sprintf("%v", lVal) == fmt.Sprintf("%v", rVal)
 	}, nil
 }

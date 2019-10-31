@@ -156,7 +156,6 @@ func TestClauseEval(t *testing.T) {
 					}
 				} else {
 					assert.NoErrorf(t, err, "compile error")
-					return
 				}
 
 				v := cf(st.data)

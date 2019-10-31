@@ -3,7 +3,6 @@ package jsonlogic
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 )
 
 // Operator repsents a jsonlogic Operator.
@@ -45,7 +44,6 @@ func (arg *Argument) UnmarshalJSON(bs []byte) error {
 		*arg = Argument{
 			Value: v,
 		}
-		log.Printf("arg %#v", *arg)
 		return nil
 	}
 
