@@ -160,7 +160,31 @@ func buildIfOp3(args Arguments, ops OpsSet) (ClauseFunc, error) {
 }
 
 func buildIfOpMulti(args Arguments, ops OpsSet) (ClauseFunc, error) {
-	panic("multi statement if not implemented")
+	var termArgs []ClauseFunc
+	for _, a := range args {
+		termArg, err := buildArgFunc(a, ops)
+		if err != nil {
+			return nil, err
+		}
+		termArgs = append(termArgs, termArg)
+	}
+
+	return func(data interface{}) interface{} {
+		last := 0
+		for i := 0; i <= len(termArgs)/2; i++ {
+			lval := termArgs[i](data)
+			if IsTrue(lval) {
+				return termArgs[i+1](data)
+			}
+			last += 2
+		}
+		// got here, if there is a final term, it should
+		// be return
+		if last == len(termArgs) {
+			return termArgs[len(termArgs)-1](data)
+		}
+		return nil
+	}, nil
 }
 
 func buildIfOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
