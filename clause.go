@@ -14,8 +14,11 @@ type Operator struct {
 // operator.
 type Argument struct {
 	Clause
-	string
-	float64
+	Value interface{}
+}
+
+func (arg *Argument) UnmarshalJSON(bs []byte) error {
+	panic("not implemented")
 }
 
 type Arguments []Argument
@@ -61,14 +64,16 @@ func (c *Clause) MarshalJSON() ([]byte, error) {
 	panic("not implemented")
 }
 
+/*
 // EvalJSON evluates this clause against the supplied
 // data. The data is parsed as json, and raw json
 // is returned.
-func (c *Clause) EvalJSON(data []byte) ([]byte, error) {
+func (c *Clause) CpompileJSON(data []byte) ([]byte, error) {
 	panic("not implemented")
 }
 
 // Eval evaluates this clause against the provided data.
-func (c *Clause) Eval(data interface{}) (interface{}, error) {
+func (c *Clause) Compile(data interface{}) (interface{}, error) {
 	panic("not implemented")
 }
+*/
