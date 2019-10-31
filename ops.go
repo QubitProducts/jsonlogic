@@ -124,6 +124,86 @@ func buildVarOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	}, nil
 }
 
+func nullf(data interface{}) interface{} {
+	return nil
+}
+
+func buildIfOp3(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	var err error
+
+	termArg, err := buildArgFunc(args[0], ops)
+	if err != nil {
+		return nil, err
+	}
+
+	lArg, err := buildArgFunc(args[1], ops)
+	if err != nil {
+		return nil, err
+	}
+
+	rArg := nullf
+	if len(args) == 3 {
+		if rArg, err = buildArgFunc(args[1], ops); err != nil {
+			return nil, err
+		}
+	}
+
+	return func(data interface{}) interface{} {
+		termVal := termArg(data)
+		lVal := lArg(data)
+		rVal := rArg(data)
+		if IsTrue(termVal) {
+			return lVal
+		}
+		return rVal
+	}, nil
+}
+
+func buildIfOpMulti(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	panic("multi statement if not implemented")
+}
+
+func buildIfOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	switch {
+	case len(args) == 0:
+		return nullf, nil
+	case len(args) == 1:
+		return func(data interface{}) interface{} {
+			return data
+		}, nil
+	case len(args) <= 3:
+		return buildIfOp3(args, ops)
+	default:
+		return buildIfOpMulti(args, ops)
+	}
+
+}
+
+func buildAndOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	if len(args) == 0 {
+		return nullf, nil
+	}
+
+	var termArgs []ClauseFunc
+	for _, ta := range args {
+		termArg, err := buildArgFunc(ta, ops)
+		if err != nil {
+			return nil, err
+		}
+		termArgs = append(termArgs, termArg)
+	}
+
+	return func(data interface{}) interface{} {
+		for _, t := range termArgs {
+			v := t(data)
+			if !IsTrue(v) {
+				return false
+			}
+		}
+		return true
+	}, nil
+}
+
 func buildEqualOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	switch {
 	case len(args) == 0:
@@ -193,6 +273,8 @@ func (ops OpsSet) Compile(c *Clause) (ClauseFunc, error) {
 var DefaultOps = OpsSet{
 	nullOp:       buildNullOp,
 	varOp:        buildVarOp,
+	ifOp:         buildIfOp,
+	andOp:        buildAndOp,
 	equalOp:      buildEqualOp,
 	equalThreeOp: buildEqualThreeOp,
 }
