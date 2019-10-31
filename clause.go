@@ -123,13 +123,24 @@ func (c Clause) MarshalJSON() ([]byte, error) {
 // prefer returning null to returning any specific errors.
 type ClauseFunc func(data interface{}) interface{}
 
+const (
+	nullOp = ""
+)
+
+var ops = map[string]func(args Arguments) ClauseFunc{
+	nullOp: func(args Arguments) ClauseFunc {
+		return func(data interface{}) interface{} {
+			return args[0].Value
+		}
+	},
+}
+
 // Compile builds a ClauseFunc that will execute
 // the provided rule against the data.
 func Compile(c *Clause) (ClauseFunc, error) {
-	if c.Operator.Name == "" {
-		return func(data interface{}) interface{} {
-			return c.Arguments[0].Value
-		}, nil
+	bf, ok := ops[c.Operator.Name]
+	if !ok {
+		return nil, fmt.Errorf("unrecognized operation %s", c.Operator.Name)
 	}
-	panic("not implemented")
+	return bf(c.Arguments), nil
 }

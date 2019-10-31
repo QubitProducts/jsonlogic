@@ -9,20 +9,21 @@ import (
 
 func TestClauseEval(t *testing.T) {
 	type test struct {
-		name      string
-		rule      string
-		marshalTo string
-		data      interface{}
-		expect    interface{}
-		expErr    string
+		name       string
+		rule       string
+		marshalTo  string
+		data       interface{}
+		expect     interface{}
+		parseErr   string
+		compileErr string
 	}
 
 	tests := []test{
 		{
-			name:   "invalid-json",
-			rule:   `{`,
-			expect: true,
-			expErr: "unexpected end of JSON input",
+			name:     "invalid-json",
+			rule:     `{`,
+			expect:   true,
+			parseErr: "unexpected end of JSON input",
 		},
 		{ // invalid clause, but valid JSON, should return the thing passed in.
 			name:      "invalid-clause",
@@ -50,6 +51,12 @@ func TestClauseEval(t *testing.T) {
 			rule:      `false`,
 			marshalTo: `false`,
 			expect:    false,
+		},
+		{
+			name:       "unknown-op",
+			rule:       `{ "XXX" : [1, 1] }`,
+			marshalTo:  `{"XXX":[1,1]}`,
+			compileErr: "unrecognized operation XXX",
 		},
 		{
 			name:      "simple",
@@ -124,8 +131,8 @@ func TestClauseEval(t *testing.T) {
 			assert.NotPanics(t, func() {
 				var c Clause
 				err := json.Unmarshal([]byte(st.rule), &c)
-				if st.expErr != "" {
-					assert.EqualErrorf(t, err, st.expErr, "unmarshal error")
+				if st.parseErr != "" {
+					assert.EqualErrorf(t, err, st.parseErr, "unmarshal error")
 					return
 				} else {
 					assert.NoErrorf(t, err, "unmarshal error")
@@ -136,13 +143,14 @@ func TestClauseEval(t *testing.T) {
 				assert.Equalf(t, st.marshalTo, string(marshalTo), "re-marshaled clause")
 
 				cf, err := Compile(&c)
-				if st.expErr != "" {
-					assert.EqualErrorf(t, err, st.expErr, "compile error")
+				if st.compileErr != "" {
+					assert.EqualErrorf(t, err, st.compileErr, "compile error")
 					if err != nil {
 						return
 					}
 				} else {
 					assert.NoErrorf(t, err, "compile error")
+					return
 				}
 
 				v := cf(st.data)
