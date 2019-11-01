@@ -173,7 +173,7 @@ func buildIfOp3(args Arguments, ops OpsSet) (ClauseFunc, error) {
 
 	rArg := nullf
 	if len(args) == 3 {
-		if rArg, err = buildArgFunc(args[1], ops); err != nil {
+		if rArg, err = buildArgFunc(args[2], ops); err != nil {
 			return nil, err
 		}
 	}

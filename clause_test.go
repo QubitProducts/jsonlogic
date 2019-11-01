@@ -206,6 +206,22 @@ func TestClauseEval(t *testing.T) {
 			data:   map[string]interface{}{"a": "apple", "c": "carrot"},
 			expect: []interface{}{"b"},
 		},
+		{
+			name:   "missing-none-missing",
+			rule:   `{"missing":["a", "b"]}`,
+			data:   map[string]interface{}{"a": "apple", "b": "carrot"},
+			expect: []interface{}{},
+		},
+		{
+			name: "missing-with-if",
+			rule: `{"if":[
+							{"missing":["a", "b"]},
+							"Not enough fruit",
+							"OK to proceed"
+						 ]}`,
+			data:   map[string]interface{}{"a": "apple", "b": "carrot"},
+			expect: "OK to proceed",
+		},
 	}
 
 	for _, st := range tests {

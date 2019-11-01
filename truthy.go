@@ -1,6 +1,8 @@
 package jsonlogic
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // IsTrue implements the truthy/falsy semantics of jsonlogic
 // as documented here: https://jsonlogic.com/truthy.html
