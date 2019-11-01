@@ -269,6 +269,30 @@ func TestClauseEval(t *testing.T) {
 			data:   map[string]interface{}{"temp": 55.0},
 			expect: "liquid",
 		},
+		{
+			name:   "merge-empty",
+			rule:   `{"merge" : [ ]}`,
+			data:   nil,
+			expect: []interface{}{},
+		},
+		{
+			name:   "merge-regulat",
+			rule:   `{"merge":[ [1, 2], [3,4]]}`,
+			data:   nil,
+			expect: []interface{}{1.0, 2.0, 3.0, 4.0},
+		},
+		{
+			name:   "merge-coerce",
+			rule:   `{"merge":[ 1, 2, [3,4]]}`,
+			data:   nil,
+			expect: []interface{}{1.0, 2.0, 3.0, 4.0},
+		},
+		{
+			name:   "merge-coerce",
+			rule:   `{"merge":[ 1, 2, [3,[4,5]]]}`,
+			data:   nil,
+			expect: []interface{}{1.0, 2.0, 3.0, []interface{}{4.0, 5.0}},
+		},
 	}
 
 	for _, st := range tests {
