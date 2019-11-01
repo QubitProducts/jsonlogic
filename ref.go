@@ -10,6 +10,16 @@ func deref(data interface{}, ref []string) interface{} {
 		return nil
 	}
 	switch data := data.(type) {
+	case []interface{}:
+		index, err := strconv.Atoi(ref[0])
+		if err != nil || index < 0 || index+1 > len(data) {
+			return nil
+		}
+		val := data[index]
+		if len(ref) == 1 {
+			return val
+		}
+		return deref(val, ref[1:])
 	case map[string]interface{}:
 		val, ok := data[ref[0]]
 		if !ok {
