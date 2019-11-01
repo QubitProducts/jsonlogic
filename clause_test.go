@@ -222,6 +222,31 @@ func TestClauseEval(t *testing.T) {
 			data:   map[string]interface{}{"a": "apple", "b": "carrot"},
 			expect: "OK to proceed",
 		},
+		{
+			name:   "missing_some-ok",
+			rule:   `{"missing_some":[1, ["a", "b", "c"]]}`,
+			data:   map[string]interface{}{"a": "apple"},
+			expect: []interface{}{},
+		},
+		{
+			name:   "missing_some-toomany",
+			rule:   `{"missing_some":[2, ["a", "b", "c"]]}`,
+			data:   map[string]interface{}{"a": "apple"},
+			expect: []interface{}{"b", "c"},
+		},
+		{
+			name: "missing_some-complex",
+			rule: `{"if" :[
+							{"merge": [
+								{"missing":["first_name", "last_name"]},
+						     {"missing_some":[1, ["cell_phone", "home_phone"] ]}
+							]},
+							"We require first name, last name, and one phone number.",
+							"OK to proceed"
+						 ]}`,
+			data:   map[string]interface{}{"first_name": "Bruce", "last_name": "Wayne"},
+			expect: "We require first name, last name, and one phone number.",
+		},
 	}
 
 	for _, st := range tests {

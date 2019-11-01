@@ -128,6 +128,10 @@ func nullf(data interface{}) interface{} {
 	return nil
 }
 
+func emptySlice(interface{}) interface{} {
+	return []interface{}{}
+}
+
 func buildMissingOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	switch {
 	case len(args) == 0:
@@ -154,6 +158,49 @@ func buildMissingOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 				resp = append(resp, lval)
 			}
 		}
+		return resp
+	}, nil
+}
+
+func buildMissingSomeOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	if len(args) <= 1 {
+		return emptySlice, nil
+	}
+
+	minArg, err := buildArgFunc(args[0], ops)
+	if err != nil {
+		return nil, err
+	}
+
+	termsArg, err := buildArgFunc(args[1], ops)
+	if err != nil {
+		return nil, err
+	}
+
+	return func(data interface{}) interface{} {
+		resp := []interface{}{}
+		min := minArg(data)
+		minfloat, ok := min.(float64)
+		if !ok {
+			return resp
+		}
+
+		terms := termsArg(data)
+		termsslice, ok := terms.([]interface{})
+		if !ok {
+			return resp
+		}
+
+		for _, ta := range termsslice {
+			v := DottedRef(data, ta)
+			if v == nil {
+				resp = append(resp, ta)
+			}
+		}
+		if minfloat < float64(len(resp)) {
+			return []interface{}{}
+		}
+
 		return resp
 	}, nil
 }
@@ -454,16 +501,17 @@ func (ops OpsSet) Compile(c *Clause) (ClauseFunc, error) {
 }
 
 var DefaultOps = OpsSet{
-	nullOp:       buildNullOp,
-	varOp:        buildVarOp,
-	missingOp:    buildMissingOp,
-	ifOp:         buildIfOp,
-	andOp:        buildAndOp,
-	equalOp:      buildEqualOp,
-	equalThreeOp: buildEqualThreeOp,
-	lessOp:       buildLessOp,
-	greaterOp:    buildGreaterOp,
-	moduloOp:     buildModuloOp,
+	nullOp:        buildNullOp,
+	varOp:         buildVarOp,
+	missingOp:     buildMissingOp,
+	missingSomeOp: buildMissingSomeOp,
+	ifOp:          buildIfOp,
+	andOp:         buildAndOp,
+	equalOp:       buildEqualOp,
+	equalThreeOp:  buildEqualThreeOp,
+	lessOp:        buildLessOp,
+	greaterOp:     buildGreaterOp,
+	moduloOp:      buildModuloOp,
 }
 
 // ClauseFunc takes input data, returns a result which
