@@ -239,13 +239,35 @@ func TestClauseEval(t *testing.T) {
 			rule: `{"if" :[
 							{"merge": [
 								{"missing":["first_name", "last_name"]},
-						     {"missing_some":[1, ["cell_phone", "home_phone"] ]}
+						    {"missing_some":[1, ["cell_phone", "home_phone"] ]}
 							]},
 							"We require first name, last name, and one phone number.",
 							"OK to proceed"
 						 ]}`,
 			data:   map[string]interface{}{"first_name": "Bruce", "last_name": "Wayne"},
 			expect: "We require first name, last name, and one phone number.",
+		},
+		{
+			name:   "if-true",
+			rule:   `{"if" : [ true, "yes", "no" ]}`,
+			data:   nil,
+			expect: "yes",
+		},
+		{
+			name:   "if-false",
+			rule:   `{"if" : [ false, "yes", "no" ]}`,
+			data:   nil,
+			expect: "no",
+		},
+		{
+			name: "if-multi",
+			rule: `{"if" : [
+							{"<": [{"var":"temp"}, 0] }, "freezing",
+							{"<": [{"var":"temp"}, 100] }, "liquid",
+							"gas"
+						]}`,
+			data:   map[string]interface{}{"temp": 55.0},
+			expect: "liquid",
 		},
 	}
 

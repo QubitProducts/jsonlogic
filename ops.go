@@ -34,12 +34,20 @@ const (
 	maxOp       = "max" // TODO
 	minOp       = "min" // TODO
 
-	// Array operations
 	plusOp     = "+" // TODO
 	minusOp    = "-" // TODO
 	multiplyOp = "*" // TODO
 	divideOp   = "/" // TODO
 	moduloOp   = "%"
+
+	// Array operations
+	mapOp    = "map"    // TODO
+	reduceOp = "reduce" // TODO
+	filterOp = "filter" // TODO
+	allOp    = "all"    // TODO
+	noneOp   = "none"   // TODO
+	someOp   = "some"   // TODO
+	mergeOp  = "merge"  // TODO
 
 	// String operations
 	inOp     = "in"     // TODO
@@ -167,7 +175,7 @@ func buildMissingSomeOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return emptySlice, nil
 	}
 
-	minArg, err := buildArgFunc(args[0], ops)
+	requiredArg, err := buildArgFunc(args[0], ops)
 	if err != nil {
 		return nil, err
 	}
@@ -179,8 +187,8 @@ func buildMissingSomeOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 
 	return func(data interface{}) interface{} {
 		resp := []interface{}{}
-		min := minArg(data)
-		minfloat, ok := min.(float64)
+		required := requiredArg(data)
+		requiredfloat, ok := required.(float64)
 		if !ok {
 			return resp
 		}
@@ -191,13 +199,16 @@ func buildMissingSomeOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 			return resp
 		}
 
+		found := float64(0)
 		for _, ta := range termsslice {
 			v := DottedRef(data, ta)
-			if v == nil {
-				resp = append(resp, ta)
+			if v != nil {
+				found++
+				continue
 			}
+			resp = append(resp, ta)
 		}
-		if minfloat < float64(len(resp)) {
+		if found >= requiredfloat {
 			return []interface{}{}
 		}
 
@@ -492,6 +503,35 @@ func buildModuloOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	}, nil
 }
 
+func buildMergeOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	switch {
+	case len(args) == 0:
+		return emptySlice, nil
+	}
+
+	var termArgs []ClauseFunc
+	for _, a := range args {
+		termArg, err := buildArgFunc(a, ops)
+		if err != nil {
+			return nil, err
+		}
+		termArgs = append(termArgs, termArg)
+	}
+
+	return func(data interface{}) interface{} {
+		resp := []interface{}{}
+		for _, ta := range termArgs {
+			item := ta(data)
+			sliceitem, ok := item.([]interface{})
+			if !ok {
+				sliceitem = []interface{}{item}
+			}
+			resp = append(resp, sliceitem...)
+		}
+		return resp
+	}, nil
+}
+
 func (ops OpsSet) Compile(c *Clause) (ClauseFunc, error) {
 	bf, ok := ops[c.Operator.Name]
 	if !ok {
@@ -512,6 +552,8 @@ var DefaultOps = OpsSet{
 	lessOp:        buildLessOp,
 	greaterOp:     buildGreaterOp,
 	moduloOp:      buildModuloOp,
+
+	mergeOp: buildMergeOp,
 }
 
 // ClauseFunc takes input data, returns a result which
