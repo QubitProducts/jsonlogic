@@ -95,13 +95,10 @@ func buildVarOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		switch data := data.(type) {
 		case map[string]interface{}:
 			index, ok := indexVal.(string)
-			if !ok {
-				return defaultArg
-			}
-			if len(index) == 0 {
+			if ok && len(index) == 0 {
 				return data
 			}
-			return DottedRef(data, index)
+			return DottedRef(data, indexVal)
 
 		case []interface{}:
 			index, ok := indexVal.(float64)
@@ -126,6 +123,36 @@ func buildVarOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 
 func nullf(data interface{}) interface{} {
 	return nil
+}
+
+func buildMissingOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	switch {
+	case len(args) == 0:
+		return func(data interface{}) interface{} {
+			return data
+		}, nil
+	}
+
+	var termArgs []ClauseFunc
+	for _, a := range args {
+		termArg, err := buildArgFunc(a, ops)
+		if err != nil {
+			return nil, err
+		}
+		termArgs = append(termArgs, termArg)
+	}
+
+	return func(data interface{}) interface{} {
+		resp := []interface{}{}
+		for _, ta := range termArgs {
+			lval := ta(data)
+			v := DottedRef(data, lval)
+			if v == nil {
+				resp = append(resp, v)
+			}
+		}
+		return resp
+	}, nil
 }
 
 func buildIfOp3(args Arguments, ops OpsSet) (ClauseFunc, error) {
