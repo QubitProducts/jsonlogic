@@ -141,9 +141,8 @@ func TestClauseEval(t *testing.T) {
 				if st.parseErr != "" {
 					assert.EqualErrorf(t, err, st.parseErr, "unmarshal error")
 					return
-				} else {
-					assert.NoErrorf(t, err, "unmarshal error")
 				}
+				assert.NoErrorf(t, err, "unmarshal error")
 
 				marshalTo, err := json.Marshal(c)
 				assert.NoErrorf(t, err, "marshal error")
@@ -163,5 +162,37 @@ func TestClauseEval(t *testing.T) {
 				assert.Equalf(t, st.expect, v, "response data")
 			})
 		})
+	}
+}
+
+func BenchmarkFizzBuzz(b *testing.B) {
+	b.ReportAllocs()
+	fizzbuzz := `{ "if": [
+								{"==": [ { "%": [ { "var": "i" }, 15 ] }, 0]},
+								"fizzbuzz",
+
+								{"==": [ { "%": [ { "var": "i" }, 3 ] }, 0]},
+								"fizz",
+
+								{"==": [ { "%": [ { "var": "i" }, 5 ] }, 0]},
+								"buzz",
+
+								{ "var": "i" }
+							 ]}`
+	data := map[string]interface{}{"i": float64(20)}
+
+	var c Clause
+	err := json.Unmarshal([]byte(fizzbuzz), &c)
+	if err != nil {
+		b.Fatalf("unmarshal failed, %v", err)
+	}
+
+	cf, err := Compile(&c)
+	if err != nil {
+		b.Fatalf("compile failed, %v", err)
+	}
+	b.ResetTimer()
+	for i := b.N; i >= 0; i-- {
+		cf(data)
 	}
 }
