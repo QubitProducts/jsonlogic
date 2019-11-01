@@ -87,6 +87,13 @@ func TestClauseEval(t *testing.T) {
 			expect:    float64(1),
 		},
 		{
+			name:      "data-driven-default",
+			rule:      `{ "var" : ["b",26] }`,
+			marshalTo: `{"var":["b",26]}`,
+			data:      map[string]interface{}{"a": float64(1)},
+			expect:    float64(26),
+		},
+		{
 			name:      "data-driven-sugar",
 			rule:      `{ "var" : "a" }`,
 			marshalTo: `{"var":["a"]}`,

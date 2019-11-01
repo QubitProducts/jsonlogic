@@ -98,7 +98,11 @@ func buildVarOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 			if ok && len(index) == 0 {
 				return data
 			}
-			return DottedRef(data, indexVal)
+			v := DottedRef(data, indexVal)
+			if v != nil {
+				return v
+			}
+			return defaultVal
 
 		case []interface{}:
 			index, ok := indexVal.(float64)
@@ -111,7 +115,6 @@ func buildVarOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 				intindex < 0 || intindex >= len(data):
 
 				return defaultVal
-
 			default:
 				return data[intindex]
 			}
