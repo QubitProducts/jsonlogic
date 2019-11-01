@@ -98,11 +98,10 @@ func buildVarOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 			if !ok {
 				return defaultArg
 			}
-			val, ok := data[index]
-			if !ok {
-				return defaultArg
+			if len(index) == 0 {
+				return data
 			}
-			return val
+			return DottedRef(data, index)
 
 		case []interface{}:
 			index, ok := indexVal.(float64)

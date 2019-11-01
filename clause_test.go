@@ -94,6 +94,13 @@ func TestClauseEval(t *testing.T) {
 			expect:    float64(1),
 		},
 		{
+			name:      "data-driven-empty-key",
+			rule:      `{ "var" : "" }`,
+			marshalTo: `{"var":[""]}`,
+			data:      map[string]interface{}{"a": float64(1)},
+			expect:    map[string]interface{}{"a": float64(1)},
+		},
+		{
 			name:      "data-driven-array",
 			rule:      `{ "var" : 1 }`,
 			marshalTo: `{"var":[1]}`,
