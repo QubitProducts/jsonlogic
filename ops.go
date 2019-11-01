@@ -151,7 +151,7 @@ func buildMissingOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 			lval := ta(data)
 			v := DottedRef(data, lval)
 			if v == nil {
-				resp = append(resp, v)
+				resp = append(resp, lval)
 			}
 		}
 		return resp
@@ -456,6 +456,7 @@ func (ops OpsSet) Compile(c *Clause) (ClauseFunc, error) {
 var DefaultOps = OpsSet{
 	nullOp:       buildNullOp,
 	varOp:        buildVarOp,
+	missingOp:    buildMissingOp,
 	ifOp:         buildIfOp,
 	andOp:        buildAndOp,
 	equalOp:      buildEqualOp,
