@@ -307,13 +307,40 @@ func buildAndOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	}
 
 	return func(data interface{}) interface{} {
+		var lastArg interface{}
 		for _, t := range termArgs {
-			v := t(data)
-			if !IsTrue(v) {
-				return false
+			lastArg = t(data)
+			if !IsTrue(lastArg) {
+				return lastArg
 			}
 		}
-		return true
+		return lastArg
+	}, nil
+}
+
+func buildOrOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	if len(args) == 0 {
+		return nullf, nil
+	}
+
+	var termArgs []ClauseFunc
+	for _, ta := range args {
+		termArg, err := buildArgFunc(ta, ops)
+		if err != nil {
+			return nil, err
+		}
+		termArgs = append(termArgs, termArg)
+	}
+
+	return func(data interface{}) interface{} {
+		var lastArg interface{}
+		for _, t := range termArgs {
+			lastArg = t(data)
+			if IsTrue(lastArg) {
+				return lastArg
+			}
+		}
+		return lastArg
 	}, nil
 }
 
@@ -609,6 +636,7 @@ var DefaultOps = OpsSet{
 	missingSomeOp:   buildMissingSomeOp,
 	ifOp:            buildIfOp,
 	andOp:           buildAndOp,
+	orOp:            buildOrOp,
 	equalOp:         buildEqualOp,
 	equalThreeOp:    buildEqualThreeOp,
 	notEqualOp:      buildNotEqualOp,

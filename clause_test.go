@@ -224,6 +224,56 @@ func TestClauseEval(t *testing.T) {
 			expect: true,
 		},
 		{
+			name:   "double-negate-true",
+			rule:   `{"!!": [ "0" ] }`,
+			expect: true,
+		},
+		{
+			name:   "or",
+			rule:   `{"or": [ true,false ] }`,
+			expect: true,
+		},
+		{
+			name:   "or",
+			rule:   `{"or": [ false,true ] }`,
+			expect: true,
+		},
+		{
+			name:   "or-last-arg",
+			rule:   `{"or": [ false,"a" ] }`,
+			expect: "a",
+		},
+		{
+			name:   "or-multi-last-arg",
+			rule:   `{"or": [ false,0,"a" ] }`,
+			expect: "a",
+		},
+		{
+			name:   "or-multi-last-false",
+			rule:   `{"or": [ false,0,[] ] }`,
+			expect: []interface{}{},
+		},
+		{
+			name:   "and",
+			rule:   `{"and": [ true,true ] }`,
+			expect: true,
+		},
+		{
+			name:   "and-false",
+			rule:   `{"and": [ true,false ] }`,
+			expect: false,
+		},
+		{
+			name:   "and-multi",
+			rule:   `{"and":[true,"a",3]}`,
+			expect: 3.0,
+		},
+		{
+			name:   "and-multi-false",
+			rule:   `{"and":[true,"",3]}`,
+			expect: "",
+		},
+		{
 			name: "compound",
 			rule: `{"and" : [
 								 { ">" : [3,1] },
