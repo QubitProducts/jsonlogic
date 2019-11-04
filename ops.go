@@ -1218,6 +1218,111 @@ func buildReduceOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	}, nil
 }
 
+func buildAllOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	if len(args) < 2 {
+		return nullf, nil
+	}
+
+	lArg, err := buildArgFunc(args[0], ops)
+	if err != nil {
+		return nil, err
+	}
+
+	fArg, err := buildArgFunc(args[1], ops)
+	if err != nil {
+		return nil, err
+	}
+
+	return func(data interface{}) interface{} {
+		lval := lArg(data)
+		lslice, ok := lval.([]interface{})
+		if !ok {
+			return []interface{}{}
+		}
+		if len(lslice) == 0 {
+			return false
+		}
+
+		for _, subd := range lslice {
+			if !IsTrue(fArg(subd)) {
+				return false
+			}
+		}
+
+		return true
+	}, nil
+}
+
+func buildSomeOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	if len(args) < 2 {
+		return nullf, nil
+	}
+
+	lArg, err := buildArgFunc(args[0], ops)
+	if err != nil {
+		return nil, err
+	}
+
+	fArg, err := buildArgFunc(args[1], ops)
+	if err != nil {
+		return nil, err
+	}
+
+	return func(data interface{}) interface{} {
+		lval := lArg(data)
+		lslice, ok := lval.([]interface{})
+		if !ok {
+			return []interface{}{}
+		}
+		if len(lslice) == 0 {
+			return false
+		}
+
+		for _, subd := range lslice {
+			if IsTrue(fArg(subd)) {
+				return true
+			}
+		}
+
+		return false
+	}, nil
+}
+
+func buildNoneOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	if len(args) < 2 {
+		return nullf, nil
+	}
+
+	lArg, err := buildArgFunc(args[0], ops)
+	if err != nil {
+		return nil, err
+	}
+
+	fArg, err := buildArgFunc(args[1], ops)
+	if err != nil {
+		return nil, err
+	}
+
+	return func(data interface{}) interface{} {
+		lval := lArg(data)
+		lslice, ok := lval.([]interface{})
+		if !ok {
+			return []interface{}{}
+		}
+		if len(lslice) == 0 {
+			return true
+		}
+
+		for _, subd := range lslice {
+			if IsTrue(fArg(subd)) {
+				return false
+			}
+		}
+
+		return true
+	}, nil
+}
+
 func (ops OpsSet) Compile(c *Clause) (ClauseFunc, error) {
 	bf, ok := ops[c.Operator.Name]
 	if !ok {
@@ -1258,7 +1363,11 @@ var DefaultOps = OpsSet{
 	mapOp:    buildMapOp,
 	filterOp: buildFilterOp,
 	reduceOp: buildReduceOp,
-	mergeOp:  buildMergeOp,
+	allOp:    buildAllOp,
+	someOp:   buildSomeOp,
+	noneOp:   buildNoneOp,
+
+	mergeOp: buildMergeOp,
 }
 
 // ClauseFunc takes input data, returns a result which

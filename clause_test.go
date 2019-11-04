@@ -621,6 +621,51 @@ func TestClauseEval(t *testing.T) {
 			expect: 15.0,
 		},
 		{
+			name:   "all",
+			rule:   `{"some" : [ [-1,0,1], {">":[{"var":""}, 0]} ]}`,
+			expect: true,
+		},
+		{
+			name:   "all-fail",
+			rule:   `{"all" : [ [-1,0,1], {"==":[{"var":""}, 0]} ]}`,
+			expect: false,
+		},
+		{
+			name:   "some",
+			rule:   `{"some" : [ [-1,0,1], {">":[{"var":""}, 0]} ]}`,
+			expect: true,
+		},
+		{
+			name:   "some-fail",
+			rule:   `{"some" : [ [-1,0,1], {">":[{"var":""}, 2]} ]}`,
+			expect: false,
+		},
+		{
+			name:   "none",
+			rule:   `{"none" : [ [-3,-2,-1], {">":[{"var":""}, 0]} ]}`,
+			expect: true,
+		},
+		{
+			name:   "none-fail",
+			rule:   `{"none" : [ [-3,-2,0], {"==":[{"var":""}, 0]} ]}`,
+			expect: false,
+		},
+		{
+			name:   "all-empty",
+			rule:   `{"all" : [ [], {">":[{"var":""}, 0]} ]}`,
+			expect: false,
+		},
+		{
+			name:   "some-empty",
+			rule:   `{"some" : [ [], {">":[{"var":""}, 0]} ]}`,
+			expect: false,
+		},
+		{
+			name:   "none-empty",
+			rule:   `{"none" : [ [], {">":[{"var":""}, 0]} ]}`,
+			expect: true,
+		},
+		{
 			name:   "merge-empty",
 			rule:   `{"merge" : [ ]}`,
 			data:   nil,
