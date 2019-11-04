@@ -389,21 +389,23 @@ func TestClauseEval(t *testing.T) {
 			rule:   `{"-":[]}`,
 			expect: nil,
 		},
-		{
-			name:   "multiply",
-			rule:   `{"*":[4,2]}`,
-			expect: 8.0,
-		},
-		{
-			name:   "multiply-one",
-			rule:   `{"*":[4]}`,
-			expect: 4.0,
-		},
-		{
-			name:   "multiply-one",
-			rule:   `{"*":[]}`,
-			expect: nil, // this one actually errors on jsonlogic
-		},
+		/*
+			{
+				name:   "multiply",
+				rule:   `{"*":[4,2]}`,
+				expect: 8.0,
+			},
+			{
+				name:   "multiply-one",
+				rule:   `{"*":[4]}`,
+				expect: 4.0,
+			},
+			{
+				name:   "multiply-one",
+				rule:   `{"*":[]}`,
+				expect: nil, // this one actually errors on jsonlogic
+			},
+		*/
 		{
 			name:   "divide",
 			rule:   `{"/":[4,2]}`,
@@ -424,11 +426,13 @@ func TestClauseEval(t *testing.T) {
 			rule:   `{"+":[2,2,2,2,2]}`,
 			expect: 10.0,
 		},
-		{
-			name:   "multiply-multi",
-			rule:   `{"*":[2,2,2,2,2]}`,
-			expect: 32.0,
-		},
+		/*
+			{
+				name:   "multiply-multi",
+				rule:   `{"*":[2,2,2,2,2]}`,
+				expect: 32.0,
+			},
+		*/
 		{
 			name:   "unary-minus",
 			rule:   `{"-":[2]}`,
@@ -475,6 +479,12 @@ func TestClauseEval(t *testing.T) {
 			rule:   `{ "var" : "" }`,
 			data:   map[string]interface{}{"a": float64(1)},
 			expect: map[string]interface{}{"a": float64(1)},
+		},
+		{
+			name:   "data-driven-empty-array-key",
+			rule:   `{ "var" : [""] }`,
+			data:   2.0,
+			expect: 2.0,
 		},
 		{
 			name:   "data-driven-array",
@@ -579,6 +589,17 @@ func TestClauseEval(t *testing.T) {
 						]}`,
 			data:   map[string]interface{}{"temp": 55.0},
 			expect: "liquid",
+		},
+		{
+			name: "map",
+			rule: `{"map":[
+							{"var":"integers"},
+							{"*":[{"var":""},2]}
+						 ]}`,
+			data: map[string]interface{}{
+				"integers": []interface{}{1.0, 2.0, 3.0, 4.0, 5.0},
+			},
+			expect: []interface{}{2.0, 4.0, 6.0, 8.0, 10.0},
 		},
 		{
 			name:   "merge-empty",
