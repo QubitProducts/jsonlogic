@@ -1144,6 +1144,80 @@ func buildMapOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	}, nil
 }
 
+func buildFilterOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	if len(args) < 2 {
+		return nullf, nil
+	}
+
+	lArg, err := buildArgFunc(args[0], ops)
+	if err != nil {
+		return nil, err
+	}
+
+	rArg, err := buildArgFunc(args[1], ops)
+	if err != nil {
+		return nil, err
+	}
+
+	return func(data interface{}) interface{} {
+		lval := lArg(data)
+		lslice, ok := lval.([]interface{})
+		if !ok {
+			return []interface{}{}
+		}
+
+		resp := []interface{}{}
+
+		for _, subd := range lslice {
+			if IsTrue(rArg(subd)) {
+				resp = append(resp, subd)
+			}
+		}
+
+		return resp
+	}, nil
+}
+
+func buildReduceOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	if len(args) < 3 {
+		return nullf, nil
+	}
+
+	lArg, err := buildArgFunc(args[0], ops)
+	if err != nil {
+		return nil, err
+	}
+
+	fArg, err := buildArgFunc(args[1], ops)
+	if err != nil {
+		return nil, err
+	}
+
+	initialArg, err := buildArgFunc(args[2], ops)
+	if err != nil {
+		return nil, err
+	}
+
+	return func(data interface{}) interface{} {
+		lval := lArg(data)
+		lslice, ok := lval.([]interface{})
+		if !ok {
+			return []interface{}{}
+		}
+
+		var acc = initialArg(data)
+
+		for _, subd := range lslice {
+			acc = fArg(map[string]interface{}{
+				"current":     subd,
+				"accumulator": acc,
+			})
+		}
+
+		return acc
+	}, nil
+}
+
 func (ops OpsSet) Compile(c *Clause) (ClauseFunc, error) {
 	bf, ok := ops[c.Operator.Name]
 	if !ok {
@@ -1181,8 +1255,10 @@ var DefaultOps = OpsSet{
 	catOp:           buildCatOp,
 	substrOp:        buildSubstrOp,
 
-	mapOp:   buildMapOp,
-	mergeOp: buildMergeOp,
+	mapOp:    buildMapOp,
+	filterOp: buildFilterOp,
+	reduceOp: buildReduceOp,
+	mergeOp:  buildMergeOp,
 }
 
 // ClauseFunc takes input data, returns a result which
