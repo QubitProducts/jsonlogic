@@ -19,11 +19,11 @@ const (
 	ifOp            = "if"
 	equalOp         = "==" // TODO - coercion
 	equalThreeOp    = "==="
-	notEqualOp      = "!="  // TODO
-	notEqualThreeOp = "!==" // TODO
-	notOp           = "!"   // TODO
-	notTwoOp        = "!!"  // TODO
-	orOp            = "or"  // TODO
+	notEqualOp      = "!="
+	notEqualThreeOp = "!=="
+	negateOp        = "!"
+	doubleNegateOp  = "!!"
+	orOp            = "or" // TODO
 	andOp           = "and"
 
 	// Numeric
@@ -346,6 +346,20 @@ func buildEqualOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	}, nil
 }
 
+func buildNotEqualOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	eqf, err := buildEqualOp(args, ops)
+	if err != nil {
+		return nil, err
+	}
+
+	return func(data interface{}) interface{} {
+		if eqres, ok := eqf(data).(bool); ok {
+			return !eqres
+		}
+		return false
+	}, nil
+}
+
 func buildGreaterOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	switch {
 	case len(args) == 0:
@@ -473,6 +487,54 @@ func buildEqualThreeOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	}, nil
 }
 
+func buildNotEqualThreeOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	eqf, err := buildEqualThreeOp(args, ops)
+	if err != nil {
+		return nil, err
+	}
+
+	return func(data interface{}) interface{} {
+		if eqres, ok := eqf(data).(bool); ok {
+			return !eqres
+		}
+		return false
+	}, nil
+}
+
+func buildNegateOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	if len(args) == 0 {
+		return func(data interface{}) interface{} {
+			return true
+		}, nil
+	}
+
+	lArg, err := buildArgFunc(args[0], ops)
+	if err != nil {
+		return nil, err
+	}
+
+	return func(data interface{}) interface{} {
+		return !IsTrue(lArg(data))
+	}, nil
+}
+
+func buildDoubleNegateOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	if len(args) == 0 {
+		return func(data interface{}) interface{} {
+			return false
+		}, nil
+	}
+
+	lArg, err := buildArgFunc(args[0], ops)
+	if err != nil {
+		return nil, err
+	}
+
+	return func(data interface{}) interface{} {
+		return IsTrue(lArg(data))
+	}, nil
+}
+
 func buildModuloOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	if len(args) < 2 {
 		return func(data interface{}) interface{} {
@@ -541,17 +603,21 @@ func (ops OpsSet) Compile(c *Clause) (ClauseFunc, error) {
 }
 
 var DefaultOps = OpsSet{
-	nullOp:        buildNullOp,
-	varOp:         buildVarOp,
-	missingOp:     buildMissingOp,
-	missingSomeOp: buildMissingSomeOp,
-	ifOp:          buildIfOp,
-	andOp:         buildAndOp,
-	equalOp:       buildEqualOp,
-	equalThreeOp:  buildEqualThreeOp,
-	lessOp:        buildLessOp,
-	greaterOp:     buildGreaterOp,
-	moduloOp:      buildModuloOp,
+	nullOp:          buildNullOp,
+	varOp:           buildVarOp,
+	missingOp:       buildMissingOp,
+	missingSomeOp:   buildMissingSomeOp,
+	ifOp:            buildIfOp,
+	andOp:           buildAndOp,
+	equalOp:         buildEqualOp,
+	equalThreeOp:    buildEqualThreeOp,
+	notEqualOp:      buildNotEqualOp,
+	notEqualThreeOp: buildNotEqualThreeOp,
+	negateOp:        buildNegateOp,
+	doubleNegateOp:  buildDoubleNegateOp,
+	lessOp:          buildLessOp,
+	greaterOp:       buildGreaterOp,
+	moduloOp:        buildModuloOp,
 
 	mergeOp: buildMergeOp,
 }

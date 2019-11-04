@@ -64,6 +64,11 @@ func TestClauseMarshal(t *testing.T) {
 			rule:      `{ "var" : "a" }`,
 			marshalTo: `{"var":["a"]}`,
 		},
+		{
+			name:      "data-driven-sugar",
+			rule:      `{ "var" : "a" }`,
+			marshalTo: `{"var":["a"]}`,
+		},
 	}
 
 	for _, st := range tests {
@@ -129,8 +134,93 @@ func TestClauseEval(t *testing.T) {
 			expect: true,
 		},
 		{
-			name:   "simple-uncoerced",
-			rule:   `{ "===" : [1, 1] }`,
+			name:   "equal-no-arg",
+			rule:   `{ "==" : [] }`,
+			expect: true,
+		},
+		{
+			name:   "equal-one-arg",
+			rule:   `{ "==" : [1] }`,
+			expect: false,
+		},
+		{
+			name:   "equal-coerced",
+			rule:   `{ "==" : [1, "1"] }`,
+			expect: true,
+		},
+		{
+			name:   "equal-coerced-bool",
+			rule:   `{ "==" : [0, false] }`,
+			expect: true,
+		},
+		{
+			name:   "equal-strict",
+			rule:   `{"===" : [1, 1]}`,
+			expect: true,
+		},
+		{
+			name:   "equal-strict-false",
+			rule:   `{"===" : [1, "1"]}`,
+			expect: false,
+		},
+		{
+			name:   "notequal-coerced-bool",
+			rule:   `{ "!=" : [1, 2] }`,
+			expect: true,
+		},
+		{
+			name:   "notequal-coerced-bool-false",
+			rule:   `{ "!=" : [1, "1"] }`,
+			expect: false,
+		},
+		{
+			name:   "notequal-strict",
+			rule:   `{ "!==" : [1, 2] }`,
+			expect: true,
+		},
+		{
+			name:   "notequal-strict",
+			rule:   `{ "!==" : [1, "1"] }`,
+			expect: true,
+		},
+		{
+			name:   "notequal-strict-uncoerced",
+			rule:   `{ "!==" : [1, "1"] }`,
+			expect: true,
+		},
+		{
+			name:   "notequal-strict-false",
+			rule:   `{ "!==" : [1, 1] }`,
+			expect: false,
+		},
+		{
+			name:   "negate-false",
+			rule:   `{ "!" : [false]}`,
+			expect: true,
+		},
+		{
+			name:   "negate-true",
+			rule:   `{ "!" : [true]}`,
+			expect: false,
+		},
+		{
+			name:   "negate-noargs",
+			rule:   `{ "!" : []}`,
+			expect: true,
+		},
+		{
+			name:   "negate-one-arg",
+			rule:   `{ "!" : false}`,
+			expect: true,
+		},
+		{
+			name:   "double-negate",
+			rule:   `{"!!": [ [] ] }`,
+			expect: false,
+		},
+		{
+			name:   "double-negate-true",
+			rule:   `{"!!": [ "0" ] }`,
 			expect: true,
 		},
 		{
