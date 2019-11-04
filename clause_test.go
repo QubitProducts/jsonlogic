@@ -2,10 +2,43 @@ package jsonlogic
 
 import (
 	"encoding/json"
+	"fmt"
+	"log"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func Example() {
+	fizzbuzz := `{ "if": [
+								{"==": [ { "%": [ { "var": "i" }, 15 ] }, 0]},
+								"fizzbuzz",
+
+								{"==": [ { "%": [ { "var": "i" }, 3 ] }, 0]},
+								"fizz",
+
+								{"==": [ { "%": [ { "var": "i" }, 5 ] }, 0]},
+								"buzz",
+
+								{ "var": "i" }
+							 ]}`
+
+	data := map[string]interface{}{"i": float64(20)}
+
+	var c Clause
+	err := json.Unmarshal([]byte(fizzbuzz), &c)
+	if err != nil {
+		log.Fatalf("unmarshal failed, %v", err)
+	}
+
+	cf, err := Compile(&c)
+	if err != nil {
+		log.Fatalf("compile failed, %v", err)
+	}
+
+	fmt.Println(cf(data))
+	// Output: buzz
+}
 
 func TestClauseMarshal(t *testing.T) {
 	type test struct {
