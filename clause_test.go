@@ -666,6 +666,27 @@ func TestClauseEval(t *testing.T) {
 			expect: true,
 		},
 		{
+			name: "some-pies",
+			rule: `{"some" : [ {"var":"pies"}, {"==":[{"var":"filling"}, "apple"]} ]}`,
+			data: map[string]interface{}{
+				"pies": []interface{}{
+					map[string]interface{}{
+						"filling": "pumpkin",
+						"temp":    110.0,
+					},
+					map[string]interface{}{
+						"filling": "rhubarb",
+						"temp":    210.0,
+					},
+					map[string]interface{}{
+						"filling": "apple",
+						"temp":    310.0,
+					},
+				},
+			},
+			expect: true,
+		},
+		{
 			name:   "merge-empty",
 			rule:   `{"merge" : [ ]}`,
 			data:   nil,
