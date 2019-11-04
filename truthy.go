@@ -6,7 +6,7 @@ import (
 
 // IsTrue implements the truthy/falsy semantics of jsonlogic
 // as documented here: https://jsonlogic.com/truthy.html
-// in addition, an emptry struct is considerd true, as
+// in addition, an emptry struct is considered true, as
 // per jsonlogic JavaScript handling of "{}"
 func IsTrue(i interface{}) bool {
 	if i == nil {

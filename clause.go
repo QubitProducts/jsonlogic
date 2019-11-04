@@ -75,7 +75,7 @@ func (args *Arguments) UnmarshalJSON(bs []byte) error {
 	return fmt.Errorf("could not parse arguments")
 }
 
-// Clause representes a jsonlogic clause.
+// Clause represents a jsonlogic clause.
 type Clause struct {
 	Operator  Operator
 	Arguments Arguments
