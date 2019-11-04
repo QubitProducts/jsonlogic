@@ -17,6 +17,10 @@ type Argument struct {
 	Value  interface{}
 }
 
+// MarshalJSON implements json.Marshaler. It enforces
+// rending of clause arguments as an array (even if there was
+// just one non array argument in the original clause when
+// unmarshaled).
 func (a Argument) MarshalJSON() ([]byte, error) {
 	switch {
 	case a.Clause != nil && a.Value != nil:
@@ -28,11 +32,12 @@ func (a Argument) MarshalJSON() ([]byte, error) {
 	}
 }
 
-func (arg *Argument) UnmarshalJSON(bs []byte) error {
+// UnmarshalJSON implements json.Unmarshaler.
+func (a *Argument) UnmarshalJSON(bs []byte) error {
 	c := Clause{}
 	clauseErr := json.Unmarshal(bs, &c)
 	if clauseErr == nil {
-		*arg = Argument{
+		*a = Argument{
 			Clause: &c,
 			Value:  nil,
 		}
@@ -41,7 +46,7 @@ func (arg *Argument) UnmarshalJSON(bs []byte) error {
 	var v interface{}
 	vErr := json.Unmarshal(bs, &v)
 	if vErr == nil {
-		*arg = Argument{
+		*a = Argument{
 			Value: v,
 		}
 		return nil
@@ -50,8 +55,11 @@ func (arg *Argument) UnmarshalJSON(bs []byte) error {
 	return fmt.Errorf("could not parse argument, %w", vErr)
 }
 
+// Arguments represents the list of arguments to a jsonlogic
+// Clause.
 type Arguments []Argument
 
+// UnmarshalJSON implements json.Unmarshaler.
 func (args *Arguments) UnmarshalJSON(bs []byte) error {
 	slice := []Argument{}
 	sliceErr := json.Unmarshal(bs, &slice)
@@ -103,8 +111,10 @@ func (c *Clause) UnmarshalJSON(bs []byte) error {
 	return nil
 }
 
-// MarshalJSON marshals a jsonlogic Clause into
-// pure JSON.
+// MarshalJSON implements json.Marshaler. It enforces
+// rending of clause arguments as an array (even if there was
+// just one non array argument in the original clause when
+// unmarshaled).
 func (c Clause) MarshalJSON() ([]byte, error) {
 	switch c.Operator.Name {
 	case "":

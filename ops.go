@@ -37,27 +37,29 @@ const (
 	maxOp       = "max"
 	minOp       = "min"
 
-	plusOp     = "+" // TODO - unary coercion
-	minusOp    = "-" // TODO - unary minus
+	plusOp     = "+"
+	minusOp    = "-"
 	multiplyOp = "*"
 	divideOp   = "/"
 	moduloOp   = "%"
 
 	// Array operations
-	mapOp    = "map"    // TODO
-	reduceOp = "reduce" // TODO
-	filterOp = "filter" // TODO
-	allOp    = "all"    // TODO
-	noneOp   = "none"   // TODO
-	someOp   = "some"   // TODO
+	mapOp    = "map"
+	reduceOp = "reduce"
+	filterOp = "filter"
+	allOp    = "all"
+	noneOp   = "none"
+	someOp   = "some"
 	mergeOp  = "merge"
 
 	// String operations
-	inOp     = "in"     // TODO
-	catOp    = "cat"    // TODO
-	substrOp = "substr" // TODO
+	inOp     = "in"
+	catOp    = "cat"
+	substrOp = "substr"
 )
 
+// OpsSet operation names to a function that can build an instance of that
+// operation.
 type OpsSet map[string]func(args Arguments, ops OpsSet) (ClauseFunc, error)
 
 func buildArgFunc(arg Argument, ops OpsSet) (ClauseFunc, error) {
@@ -1323,6 +1325,8 @@ func buildNoneOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	}, nil
 }
 
+// Compile compiles a given clause using the operation constructors in this
+// OpsSet
 func (ops OpsSet) Compile(c *Clause) (ClauseFunc, error) {
 	bf, ok := ops[c.Operator.Name]
 	if !ok {
@@ -1331,6 +1335,8 @@ func (ops OpsSet) Compile(c *Clause) (ClauseFunc, error) {
 	return bf(c.Arguments, ops)
 }
 
+// DefaultOps is the default set of operations as specified on the jsonlogic
+// site.
 var DefaultOps = OpsSet{
 	nullOp:          buildNullOp,
 	varOp:           buildVarOp,
