@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 )
@@ -369,9 +370,22 @@ func buildEqualOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 
 	return func(data interface{}) interface{} {
 		lVal := lArg(data)
-		rVal := rArg(data)
+		_, lisstr := lVal.(string)
+		_, lisbool := lVal.(bool)
 
-		return fmt.Sprintf("%v", lVal) == fmt.Sprintf("%v", rVal)
+		rVal := rArg(data)
+		_, risstr := rVal.(string)
+		_, risbool := rVal.(bool)
+
+		switch {
+		case lisstr || risstr:
+			return fmt.Sprintf("%v", lVal) == fmt.Sprintf("%v", rVal)
+		case lisbool || risbool:
+			return IsTrue(lVal) == IsTrue(rVal)
+		default:
+			return reflect.DeepEqual(lVal, rVal)
+		}
+
 	}, nil
 }
 
@@ -738,19 +752,53 @@ func buildPlusOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		resp := 0.0
 		for _, ta := range termArgs {
 			item := ta(data)
-			floatitem, ok := item.(float64)
-			if !ok {
+			switch v := item.(type) {
+			case float64:
+				resp += v
+			case string:
+				f, err := strconv.ParseFloat(v, 64)
+				if err != nil {
+					continue
+				}
+				resp += f
+			default:
 				return nil
 			}
-			resp += floatitem
 		}
 		return resp
+	}, nil
+}
+
+func buildUnaryMinusOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	arg, err := buildArgFunc(args[0], ops)
+	if err != nil {
+		return nil, err
+	}
+
+	return func(data interface{}) interface{} {
+		v := arg(data)
+		switch v := v.(type) {
+		case float64:
+			return -1.0 * v
+		case string:
+			f, err := strconv.ParseFloat(v, 64)
+			if err != nil {
+				return nil
+			}
+			return -1.0 * f
+		default:
+			return nil
+		}
 	}, nil
 }
 
 func buildMinusOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	if len(args) == 0 {
 		return nullf, nil
+	}
+
+	if len(args) == 1 {
+		return buildUnaryMinusOp(args, ops)
 	}
 
 	var termArgs []ClauseFunc
@@ -763,16 +811,21 @@ func buildMinusOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	}
 
 	return func(data interface{}) interface{} {
-		resp := 0.0
-		for _, ta := range termArgs {
+		resp := termArgs[0](data)
+		respfloat, ok := resp.(float64)
+		if !ok {
+			return nil
+		}
+
+		for _, ta := range termArgs[1:] {
 			item := ta(data)
 			floatitem, ok := item.(float64)
 			if !ok {
 				return nil
 			}
-			resp -= floatitem
+			respfloat -= floatitem
 		}
-		return resp
+		return respfloat
 	}, nil
 }
 
