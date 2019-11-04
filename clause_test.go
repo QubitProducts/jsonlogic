@@ -274,6 +274,82 @@ func TestClauseEval(t *testing.T) {
 			expect: "",
 		},
 		{
+			name:   "greater",
+			rule:   `{">":[2,1]}`,
+			expect: true,
+		},
+		{
+			name:   "greater-or-equal",
+			rule:   `{">=":[1,1]}`,
+			expect: true,
+		},
+		{
+			name:   "less",
+			rule:   `{"<":[1,2]}`,
+			expect: true,
+		},
+		{
+			name:   "less-or-equal",
+			rule:   `{"<=": [1,1]}`,
+			expect: true,
+		},
+		{
+			name:   "greater-false",
+			rule:   `{">":[2,2]}`,
+			expect: false,
+		},
+		{
+			name:   "greater-or-equal-false",
+			rule:   `{">=":[1,2]}`,
+			expect: false,
+		},
+		{
+			name:   "less-false",
+			rule:   `{"<":[1,1]}`,
+			expect: false,
+		},
+		{
+			name:   "less-or-equal-false",
+			rule:   `{"<=": [1,0]}`,
+			expect: false,
+		},
+		{
+			name:   "between",
+			rule:   `{"<":[1,2,3]}`,
+			expect: true,
+		},
+		{
+			name:   "between-low",
+			rule:   `{"<":[1,1,3]}`,
+			expect: false,
+		},
+		{
+			name:   "betwee-high",
+			rule:   `{"<":[1,4,3]}`,
+			expect: false,
+		},
+		{
+			name:   "between-inc",
+			rule:   `{"<=":[1,2,3]}`,
+			expect: true,
+		},
+		{
+			name:   "between-inc-low-equal",
+			rule:   `{"<=":[1,1,3]}`,
+			expect: true,
+		},
+		{
+			name:   "betwee-inc-high",
+			rule:   `{"<=":[1,4,3]}`,
+			expect: false,
+		},
+		{
+			name:   "less-with-data",
+			rule:   `{ "<": [0, {"var":"temp"}, 100]}`,
+			data:   map[string]interface{}{"temp": 37.0},
+			expect: true,
+		},
+		{
 			name: "compound",
 			rule: `{"and" : [
 								 { ">" : [3,1] },
