@@ -604,6 +604,90 @@ func TestClauseEval(t *testing.T) {
 			data:   nil,
 			expect: []interface{}{1.0, 2.0, 3.0, []interface{}{4.0, 5.0}},
 		},
+		{
+			name:   "in-array",
+			rule:   `{"in":[true,"true"]}`,
+			data:   nil,
+			expect: true,
+		},
+		{
+			name:   "in-string",
+			rule:   `{"in":["Spring", "Springfield"]}`,
+			data:   nil,
+			expect: true,
+		},
+		{
+			name:   "in-string-coerced",
+			rule:   `{"in":[1, "hello1"]}`,
+			data:   nil,
+			expect: true,
+		},
+		{
+			name:   "in-string-coerced-false",
+			rule:   `{"in":[2, "hello1"]}`,
+			data:   nil,
+			expect: false,
+		},
+		{
+			name:   "cat",
+			rule:   `{"cat": ["I love", " pie"]}`,
+			data:   nil,
+			expect: "I love pie",
+		},
+		{
+			name:   "cat-coerved",
+			rule:   `{"cat": ["I love", " pie",false,1]}`,
+			data:   nil,
+			expect: "I love piefalse1",
+		},
+		{
+			name:   "substr-nil",
+			rule:   `{"substr": []}`,
+			data:   nil,
+			expect: "undefined",
+		},
+		{
+			name:   "substr",
+			rule:   `{"substr": ["jsonlogic", 4]}`,
+			data:   nil,
+			expect: "logic",
+		},
+		{
+			name:   "substr",
+			rule:   `{"substr": ["jsonlogic", 20]}`,
+			data:   nil,
+			expect: "",
+		},
+		{
+			name:   "substr-from-end",
+			rule:   `{"substr": ["jsonlogic", -5]}`,
+			data:   nil,
+			expect: "logic",
+		},
+		{
+			name:   "substr-from-end-toolong",
+			rule:   `{"substr": ["jsonlogic", -20]}`,
+			data:   nil,
+			expect: "jsonlogic",
+		},
+		{
+			name:   "substr-from-end-shorter",
+			rule:   `{"substr": ["jsonlogic", -2]}`,
+			data:   nil,
+			expect: "ic",
+		},
+		{
+			name:   "substr-limit",
+			rule:   `{"substr": ["jsonlogic", 1,3]}`,
+			data:   nil,
+			expect: "son",
+		},
+		{
+			name:   "substr-limit-from-end",
+			rule:   `{"substr": ["jsonlogic", 4,-2]}`,
+			data:   nil,
+			expect: "log",
+		},
 	}
 
 	for _, st := range tests {

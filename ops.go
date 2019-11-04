@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"strings"
+	"unicode/utf8"
 )
 
 const (
@@ -11,9 +13,9 @@ const (
 	nullOp = ""
 
 	//  var
-	varOp         = "var"          // TODO - full path
-	missingOp     = "missing"      // TODO
-	missingSomeOp = "missing_some" // TODO
+	varOp         = "var"
+	missingOp     = "missing"
+	missingSomeOp = "missing_some"
 
 	// Logic
 	ifOp            = "if"
@@ -23,21 +25,21 @@ const (
 	notEqualThreeOp = "!=="
 	negateOp        = "!"
 	doubleNegateOp  = "!!"
-	orOp            = "or" // TODO
+	orOp            = "or"
 	andOp           = "and"
 
 	// Numeric
-	greaterOp   = ">"   // TODO - non float
-	greaterEqOp = ">="  // TODO
-	lessOp      = "<"   // TODO - non float
-	lessEqOp    = "<="  // TODO
-	maxOp       = "max" // TODO
-	minOp       = "min" // TODO
+	greaterOp   = ">"  // TODO - non float
+	greaterEqOp = ">=" // TODO
+	lessOp      = "<"  // TODO - non float
+	lessEqOp    = "<=" // TODO
+	maxOp       = "max"
+	minOp       = "min"
 
-	plusOp     = "+" // TODO
-	minusOp    = "-" // TODO
-	multiplyOp = "*" // TODO
-	divideOp   = "/" // TODO
+	plusOp     = "+" // TODO - unary coercion
+	minusOp    = "-" // TODO - unary minus
+	multiplyOp = "*"
+	divideOp   = "/"
 	moduloOp   = "%"
 
 	// Array operations
@@ -47,7 +49,7 @@ const (
 	allOp    = "all"    // TODO
 	noneOp   = "none"   // TODO
 	someOp   = "some"   // TODO
-	mergeOp  = "merge"  // TODO
+	mergeOp  = "merge"
 
 	// String operations
 	inOp     = "in"     // TODO
@@ -886,6 +888,169 @@ func buildMergeOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	}, nil
 }
 
+func buildInOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	if len(args) <= 1 {
+		return func(interface{}) interface{} {
+			return false
+		}, nil
+	}
+
+	lArg, err := buildArgFunc(args[0], ops)
+	if err != nil {
+		return nil, err
+	}
+	rArg, err := buildArgFunc(args[1], ops)
+	if err != nil {
+		return nil, err
+	}
+
+	return func(data interface{}) interface{} {
+		res := false
+		lval := lArg(data)
+		rval := rArg(data)
+
+		switch rval := rval.(type) {
+		case string:
+			lstr := fmt.Sprintf("%v", lval)
+			if strings.Contains(rval, lstr) {
+				return true
+			}
+			return false
+		case []interface{}:
+			for _, r := range rval {
+				if reflect.DeepEqual(lval, r) {
+					return true
+				}
+			}
+			return false
+		}
+
+		return res
+	}, nil
+}
+
+func buildCatOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	var termArgs []ClauseFunc
+	for _, a := range args {
+		termArg, err := buildArgFunc(a, ops)
+		if err != nil {
+			return nil, err
+		}
+		termArgs = append(termArgs, termArg)
+	}
+
+	return func(data interface{}) interface{} {
+		resp := ""
+		for _, ta := range termArgs {
+			resp += fmt.Sprintf("%v", ta(data))
+		}
+		return resp
+	}, nil
+}
+
+func buildSubstrOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	var err error
+	if len(args) == 0 {
+		return func(interface{}) interface{} {
+			return "undefined"
+		}, nil
+	}
+
+	lArg, err := buildArgFunc(args[0], ops)
+	if err != nil {
+		return nil, err
+	}
+
+	offsetArg := nullf
+	if len(args) >= 2 {
+		offsetArg, err = buildArgFunc(args[1], ops)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	lengthArg := nullf
+	if len(args) >= 3 {
+		lengthArg, err = buildArgFunc(args[2], ops)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return func(data interface{}) interface{} {
+		lVal := lArg(data)
+		offsetVal := offsetArg(data)
+		lengthVal := lengthArg(data)
+
+		var base string
+		var ok bool
+		if base, ok = lVal.(string); !ok {
+			base = fmt.Sprintf("%v", lVal)
+		}
+
+		baseLen := utf8.RuneCountInString(base)
+		if baseLen == 0 {
+			return base
+		}
+
+		offset := 0.0
+		offset, _ = offsetVal.(float64)
+		offsetint := int(offset)
+
+		length := 0.0
+		length, _ = lengthVal.(float64)
+		lengthint := int(length)
+
+		start := 0
+		end := baseLen
+
+		switch {
+		case offsetint > 0:
+			if offsetint > len(base) {
+				offsetint = len(base)
+			}
+			start = offsetint
+		case offsetint < 0:
+			if offsetint < (-1 * len(base)) {
+				offsetint = -1 * len(base)
+			}
+
+			start = len(base) + offsetint
+		}
+
+		switch {
+		case lengthint > 0:
+			if start+lengthint > baseLen {
+				lengthint = baseLen - start
+			}
+			end = start + lengthint
+		case lengthint < 0:
+			remaining := baseLen - start
+			if lengthint*-1 > remaining {
+				lengthint = remaining * -1
+			}
+			end += lengthint
+		}
+
+		resp := ""
+		i := 0
+		for _, c := range base {
+			if i < start {
+				i++
+				continue
+			}
+			if i >= end {
+				break
+			}
+
+			resp += string(c)
+			i++
+		}
+
+		return resp
+	}, nil
+}
+
 func (ops OpsSet) Compile(c *Clause) (ClauseFunc, error) {
 	bf, ok := ops[c.Operator.Name]
 	if !ok {
@@ -919,6 +1084,9 @@ var DefaultOps = OpsSet{
 	multiplyOp:      buildMultiplyOp,
 	divideOp:        buildDivideOp,
 	moduloOp:        buildModuloOp,
+	inOp:            buildInOp,
+	catOp:           buildCatOp,
+	substrOp:        buildSubstrOp,
 
 	mergeOp: buildMergeOp,
 }
