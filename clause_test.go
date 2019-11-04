@@ -350,6 +350,101 @@ func TestClauseEval(t *testing.T) {
 			expect: true,
 		},
 		{
+			name:   "min",
+			rule:   `{"min":[1,2,3]}`,
+			expect: 1.0,
+		},
+		{
+			name:   "max",
+			rule:   `{"max":[1,2,3]}`,
+			expect: 3.0,
+		},
+		{
+			name:   "max-nil",
+			rule:   `{"max":[]}`,
+			expect: nil,
+		},
+		{
+			name:   "plus",
+			rule:   `{"+":[4,2]}`,
+			expect: 6.0,
+		},
+		{
+			name:   "plus-single",
+			rule:   `{"+":[4]}`,
+			expect: 4.0,
+		},
+		{
+			name:   "plus-none",
+			rule:   `{"+":[]}`,
+			expect: 0.0,
+		},
+		{
+			name:   "minus",
+			rule:   `{"-":[4,2]}`,
+			expect: 2.0,
+		},
+		{
+			name:   "minus-none",
+			rule:   `{"-":[]}`,
+			expect: nil,
+		},
+		{
+			name:   "multiply",
+			rule:   `{"*":[4,2]}`,
+			expect: 8.0,
+		},
+		{
+			name:   "multiply-one",
+			rule:   `{"*":[4]}`,
+			expect: 4.0,
+		},
+		{
+			name:   "multiply-one",
+			rule:   `{"*":[]}`,
+			expect: nil, // this one actually errors on jsonlogic
+		},
+		{
+			name:   "divide",
+			rule:   `{"/":[4,2]}`,
+			expect: 2.0,
+		},
+		{
+			name:   "divide-one",
+			rule:   `{"/":[4]}`,
+			expect: nil,
+		},
+		{
+			name:   "divide-multi", // jsonlogic seems to ignore multiple args here
+			rule:   `{"/":[4,2,2]}`,
+			expect: 2.0,
+		},
+		{
+			name:   "plus-multi",
+			rule:   `{"+":[2,2,2,2,2]}`,
+			expect: 10.0,
+		},
+		{
+			name:   "multiply-multi",
+			rule:   `{"*":[2,2,2,2,2]}`,
+			expect: 32.0,
+		},
+		{
+			name:   "unary-minus",
+			rule:   `{"-":[2]}`,
+			expect: -2.0,
+		},
+		{
+			name:   "unary-minus-flip",
+			rule:   `{"-":[-2]}`,
+			expect: 2.0,
+		},
+		{
+			name:   "unary-plus-string",
+			rule:   `{"+":["3.14"]}`,
+			expect: 3.14,
+		},
+		{
 			name: "compound",
 			rule: `{"and" : [
 								 { ">" : [3,1] },

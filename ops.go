@@ -583,6 +583,68 @@ func buildLessEqualOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	}, nil
 }
 
+func buildMaxOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	switch {
+	case len(args) == 0:
+		return nullf, nil
+	}
+
+	var termArgs []ClauseFunc
+	for _, a := range args {
+		termArg, err := buildArgFunc(a, ops)
+		if err != nil {
+			return nil, err
+		}
+		termArgs = append(termArgs, termArg)
+	}
+
+	return func(data interface{}) interface{} {
+		resp := math.Inf(-1)
+		for _, ta := range termArgs {
+			item := ta(data)
+			floatitem, ok := item.(float64)
+			if !ok {
+				return nil
+			}
+			if floatitem > resp {
+				resp = floatitem
+			}
+		}
+		return resp
+	}, nil
+}
+
+func buildMinOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	switch {
+	case len(args) == 0:
+		return nullf, nil
+	}
+
+	var termArgs []ClauseFunc
+	for _, a := range args {
+		termArg, err := buildArgFunc(a, ops)
+		if err != nil {
+			return nil, err
+		}
+		termArgs = append(termArgs, termArg)
+	}
+
+	return func(data interface{}) interface{} {
+		resp := math.Inf(1)
+		for _, ta := range termArgs {
+			item := ta(data)
+			floatitem, ok := item.(float64)
+			if !ok {
+				return nil
+			}
+			if floatitem < resp {
+				resp = floatitem
+			}
+		}
+		return resp
+	}, nil
+}
+
 func buildEqualThreeOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	switch {
 	case len(args) == 0:
@@ -660,11 +722,116 @@ func buildDoubleNegateOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	}, nil
 }
 
+func buildPlusOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	var termArgs []ClauseFunc
+	for _, a := range args {
+		termArg, err := buildArgFunc(a, ops)
+		if err != nil {
+			return nil, err
+		}
+		termArgs = append(termArgs, termArg)
+	}
+
+	return func(data interface{}) interface{} {
+		resp := 0.0
+		for _, ta := range termArgs {
+			item := ta(data)
+			floatitem, ok := item.(float64)
+			if !ok {
+				return nil
+			}
+			resp += floatitem
+		}
+		return resp
+	}, nil
+}
+
+func buildMinusOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	if len(args) == 0 {
+		return nullf, nil
+	}
+
+	var termArgs []ClauseFunc
+	for _, a := range args {
+		termArg, err := buildArgFunc(a, ops)
+		if err != nil {
+			return nil, err
+		}
+		termArgs = append(termArgs, termArg)
+	}
+
+	return func(data interface{}) interface{} {
+		resp := 0.0
+		for _, ta := range termArgs {
+			item := ta(data)
+			floatitem, ok := item.(float64)
+			if !ok {
+				return nil
+			}
+			resp -= floatitem
+		}
+		return resp
+	}, nil
+}
+
+func buildMultiplyOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	if len(args) == 0 {
+		return nullf, nil
+	}
+
+	var termArgs []ClauseFunc
+	for _, a := range args {
+		termArg, err := buildArgFunc(a, ops)
+		if err != nil {
+			return nil, err
+		}
+		termArgs = append(termArgs, termArg)
+	}
+
+	return func(data interface{}) interface{} {
+		resp := 1.0
+		for _, ta := range termArgs {
+			item := ta(data)
+			floatitem, ok := item.(float64)
+			if !ok {
+				return nil
+			}
+			resp *= floatitem
+		}
+		return resp
+	}, nil
+}
+
+func buildDivideOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	if len(args) < 2 {
+		return nullf, nil
+	}
+
+	lArg, err := buildArgFunc(args[0], ops)
+	if err != nil {
+		return nil, err
+	}
+	rArg, err := buildArgFunc(args[1], ops)
+	if err != nil {
+		return nil, err
+	}
+
+	return func(data interface{}) interface{} {
+		lVal := lArg(data)
+		rVal := rArg(data)
+
+		lFloat, lisfloat := lVal.(float64)
+		rFloat, risfloat := rVal.(float64)
+		if !lisfloat || !risfloat || rFloat == 0 {
+			return nil
+		}
+		return lFloat / rFloat
+	}, nil
+}
+
 func buildModuloOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	if len(args) < 2 {
-		return func(data interface{}) interface{} {
-			return nil
-		}, nil
+		return nullf, nil
 	}
 
 	lArg, err := buildArgFunc(args[0], ops)
@@ -745,6 +912,12 @@ var DefaultOps = OpsSet{
 	lessEqOp:        buildLessEqualOp,
 	greaterOp:       buildGreaterOp,
 	greaterEqOp:     buildGreaterEqualOp,
+	minOp:           buildMinOp,
+	maxOp:           buildMaxOp,
+	plusOp:          buildPlusOp,
+	minusOp:         buildMinusOp,
+	multiplyOp:      buildMultiplyOp,
+	divideOp:        buildDivideOp,
 	moduloOp:        buildModuloOp,
 
 	mergeOp: buildMergeOp,
