@@ -97,28 +97,40 @@ func toBool(i interface{}) bool {
 
 // IsEqual is an exact equality check.
 func IsEqual(l, r interface{}) bool {
-	/*
-		_, lisfloat := l.(float64)
-		_, lisstr := l.(string)
-		_, lisbool := l.(bool)
+	_, lisfloat := l.(float64)
+	_, lisstr := l.(string)
+	_, lisbool := l.(bool)
+	lslice, lisslice := l.([]interface{})
+	lmap, lismap := l.(map[string]interface{})
 
-		_, risfloat := r.(float64)
-		_, risstr := r.(string)
-		_, risbool := r.(bool)
+	_, risfloat := r.(float64)
+	_, risstr := r.(string)
+	_, risbool := r.(bool)
+	rslice, risslice := r.([]interface{})
+	rmap, rismap := r.(map[string]interface{})
 
-			switch {
-			case l == nil && r == nil:
-				return true
-			case
-				lisfloat && risfloat,
-				lisbool && risbool,
-				lisstr && risstr:
-				return l == r
-			default:
-				return reflect.DeepEqual(l, r)
-			}
-	*/
-	return l == r
+	switch {
+	case l == nil && r == nil:
+		return true
+	case l == nil || r == nil:
+		return false
+	case lismap && rismap:
+		// compare two maps, must be the same object
+		lptr := reflect.ValueOf(lmap)
+		rptr := reflect.ValueOf(rmap)
+		return lptr == rptr
+	case lisslice && risslice:
+		lhdr := (*reflect.SliceHeader)(unsafe.Pointer(&lslice))
+		rhdr := (*reflect.SliceHeader)(unsafe.Pointer(&rslice))
+		return *lhdr == *rhdr
+	case
+		lisbool && risbool,
+		lisfloat && risfloat,
+		lisstr && risstr:
+		return l == r
+	default:
+		return false
+	}
 }
 
 // IsSoftEqual is an equality check that will
