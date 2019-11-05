@@ -58,6 +58,26 @@ const (
 	substrOp = "substr"
 )
 
+func identityf(data interface{}) interface{} {
+	return data
+}
+
+func nullf(data interface{}) interface{} {
+	return nil
+}
+
+func emptySlice(interface{}) interface{} {
+	return []interface{}{}
+}
+
+func truef(data interface{}) interface{} {
+	return true
+}
+
+func falsef(data interface{}) interface{} {
+	return false
+}
+
 // OpsSet operation names to a function that can build an instance of that
 // operation.
 type OpsSet map[string]func(args Arguments, ops OpsSet) (ClauseFunc, error)
@@ -81,15 +101,11 @@ func buildVarOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	var err error
 	var indexArg ClauseFunc
 
-	defaultArg := func(interface{}) interface{} {
-		return nil
-	}
+	defaultArg := nullf
 
 	switch {
 	case len(args) == 0:
-		return func(data interface{}) interface{} {
-			return data
-		}, nil
+		return identityf, nil
 	case len(args) >= 2:
 		if defaultArg, err = buildArgFunc(args[1], ops); err != nil {
 			return nil, err
@@ -145,20 +161,10 @@ func buildVarOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	}, nil
 }
 
-func nullf(data interface{}) interface{} {
-	return nil
-}
-
-func emptySlice(interface{}) interface{} {
-	return []interface{}{}
-}
-
 func buildMissingOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	switch {
 	case len(args) == 0:
-		return func(data interface{}) interface{} {
-			return data
-		}, nil
+		return identityf, nil
 	}
 
 	var termArgs []ClauseFunc
@@ -294,9 +300,7 @@ func buildIfOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	case len(args) == 0:
 		return nullf, nil
 	case len(args) == 1:
-		return func(data interface{}) interface{} {
-			return data
-		}, nil
+		return identityf, nil
 	case len(args) <= 3:
 		return buildIfOp3(args, ops)
 	default:
@@ -360,13 +364,9 @@ func buildOrOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 func buildEqualOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	switch {
 	case len(args) == 0:
-		return func(data interface{}) interface{} {
-			return true
-		}, nil
+		return truef, nil
 	case len(args) == 1:
-		return func(data interface{}) interface{} {
-			return false
-		}, nil
+		return falsef, nil
 	}
 
 	lArg, err := buildArgFunc(args[0], ops)
@@ -661,13 +661,9 @@ func buildMinOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 func buildEqualThreeOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	switch {
 	case len(args) == 0:
-		return func(data interface{}) interface{} {
-			return true
-		}, nil
+		return truef, nil
 	case len(args) == 1:
-		return func(data interface{}) interface{} {
-			return false
-		}, nil
+		return falsef, nil
 	}
 
 	lArg, err := buildArgFunc(args[0], ops)
@@ -703,9 +699,7 @@ func buildNotEqualThreeOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 
 func buildNegateOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	if len(args) == 0 {
-		return func(data interface{}) interface{} {
-			return true
-		}, nil
+		return truef, nil
 	}
 
 	lArg, err := buildArgFunc(args[0], ops)
@@ -720,9 +714,7 @@ func buildNegateOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 
 func buildDoubleNegateOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	if len(args) == 0 {
-		return func(data interface{}) interface{} {
-			return false
-		}, nil
+		return falsef, nil
 	}
 
 	lArg, err := buildArgFunc(args[0], ops)
@@ -940,9 +932,7 @@ func buildMergeOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 
 func buildInOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	if len(args) <= 1 {
-		return func(interface{}) interface{} {
-			return false
-		}, nil
+		return falsef, nil
 	}
 
 	lArg, err := buildArgFunc(args[0], ops)
