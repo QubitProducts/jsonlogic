@@ -103,6 +103,11 @@ func (c *Clause) UnmarshalJSON(bs []byte) error {
 	if err != nil {
 		return err
 	}
+	// this is a bit subtle, we want to differentiate instances of the empty
+	// slice, this forces a new slice header.
+	if rawslice, ok := raw.([]interface{}); ok && len(rawslice) == 0 {
+		raw = make([]interface{}, 0, 1)
+	}
 	*c = Clause{
 		Arguments: []Argument{{
 			Value: raw,

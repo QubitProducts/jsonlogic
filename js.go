@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"unsafe"
 )
 
 // IsTrue implements the truthy/falsy semantics of jsonlogic
@@ -32,7 +33,7 @@ func IsTrue(i interface{}) bool {
 	}
 }
 
-func toNumber(i interface{}) interface{} {
+func toNumber(i interface{}) float64 {
 	switch v := i.(type) {
 	case string:
 		tstr := strings.TrimSpace(v)
@@ -58,7 +59,7 @@ func toNumber(i interface{}) interface{} {
 		if len(v) == 1 {
 			return toNumber(v[0])
 		}
-		return false
+		return math.NaN()
 	case nil:
 		return 0.0
 	default:
@@ -66,10 +67,10 @@ func toNumber(i interface{}) interface{} {
 	}
 }
 
-func toString(i interface{}) interface{} {
+func toString(i interface{}) string {
 	switch v := i.(type) {
 	case string:
-		return i
+		return v
 	case float64:
 		return strconv.FormatFloat(v, 'f', -1, 64)
 	case bool:
@@ -82,7 +83,7 @@ func toString(i interface{}) interface{} {
 	case []interface{}:
 		var strs = make([]string, len(v))
 		for i := range v {
-			strs[i] = toString(v[i]).(string)
+			strs[i] = toString(v[i])
 		}
 		return strings.Join(strs, ",")
 	default:
@@ -90,31 +91,34 @@ func toString(i interface{}) interface{} {
 	}
 }
 
-func toBool(i interface{}) (interface{}, bool) {
-	return IsTrue(i), true
+func toBool(i interface{}) bool {
+	return IsTrue(i)
 }
 
 // IsEqual is an exact equality check.
 func IsEqual(l, r interface{}) bool {
-	_, lisfloat := l.(float64)
-	_, lisstr := l.(string)
-	_, lisbool := l.(bool)
+	/*
+		_, lisfloat := l.(float64)
+		_, lisstr := l.(string)
+		_, lisbool := l.(bool)
 
-	_, risfloat := r.(float64)
-	_, risstr := r.(string)
-	_, risbool := r.(bool)
+		_, risfloat := r.(float64)
+		_, risstr := r.(string)
+		_, risbool := r.(bool)
 
-	switch {
-	case l == nil && r == nil:
-		return true
-	case
-		lisfloat && risfloat,
-		lisbool && risbool,
-		lisstr && risstr:
-		return l == r
-	default:
-		return reflect.DeepEqual(l, r)
-	}
+			switch {
+			case l == nil && r == nil:
+				return true
+			case
+				lisfloat && risfloat,
+				lisbool && risbool,
+				lisstr && risstr:
+				return l == r
+			default:
+				return reflect.DeepEqual(l, r)
+			}
+	*/
+	return l == r
 }
 
 // IsSoftEqual is an equality check that will
@@ -123,24 +127,42 @@ func IsSoftEqual(l, r interface{}) bool {
 	_, lisfloat := l.(float64)
 	_, lisstr := l.(string)
 	_, lisbool := l.(bool)
+	lslice, lisslice := l.([]interface{})
+	lmap, lismap := l.(map[string]interface{})
 
 	_, risfloat := r.(float64)
 	_, risstr := r.(string)
 	_, risbool := r.(bool)
+	rslice, risslice := r.([]interface{})
+	rmap, rismap := r.(map[string]interface{})
 
 	switch {
 	case l == nil && r == nil:
 		return true
+	case l == nil || r == nil:
+		return false
+	case lismap && rismap:
+		// compare two maps, must be the same object
+		lptr := reflect.ValueOf(lmap)
+		rptr := reflect.ValueOf(rmap)
+		return lptr == rptr
+	case lisslice && risslice:
+		lhdr := (*reflect.SliceHeader)(unsafe.Pointer(&lslice))
+		rhdr := (*reflect.SliceHeader)(unsafe.Pointer(&rslice))
+		return *lhdr == *rhdr
+	case lisslice || risslice:
+		if lisslice {
+			return IsSoftEqual(toString(l), r)
+		}
+		return IsSoftEqual(l, toString(r))
+	case lismap || rismap:
+		return false
 	case
 		lisbool && risbool,
 		lisfloat && risfloat,
 		lisstr && risstr:
 		return l == r
-	case lisstr || risstr:
-		return fmt.Sprintf("%v", l) == fmt.Sprintf("%v", r)
-	case lisbool || risbool:
-		return IsTrue(l) == IsTrue(r)
 	default:
-		return reflect.DeepEqual(l, r)
+		return toNumber(l) == toNumber(r)
 	}
 }

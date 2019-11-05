@@ -187,6 +187,50 @@ func TestClauseEval(t *testing.T) {
 			expect: true,
 		},
 		{
+			name:   "equal-coerced",
+			rule:   `{ "==" : [1, ["1"]] }`,
+			expect: true,
+		},
+		{
+			name:   "equal-coerced",
+			rule:   `{ "==" : [[1,2,3], [1,2,3]] }`,
+			expect: false,
+		},
+		{
+			name:   "equal-coerced",
+			rule:   `{ "==" : ["true", true] }`,
+			expect: false,
+		},
+		{
+			name:   "equal-coerced",
+			rule:   `{ "==" : [[], []] }`,
+			expect: false,
+		},
+		{
+			name:   "equal-coerced-sliceref",
+			rule:   `{"==":[{"var":"a"},{"var":"a"}]}`,
+			data:   map[string]interface{}{"a": []interface{}{}},
+			expect: true,
+		},
+		{
+			name:   "equal-coerced-sliceref",
+			rule:   `{"==":[{"var":"a"},{"var":"b"}]}`,
+			data:   map[string]interface{}{"a": make([]interface{}, 0, 1), "b": make([]interface{}, 0, 1)},
+			expect: false,
+		},
+		{
+			name:   "equal-coerced-mapref",
+			rule:   `{"==":[{"var":"a"},{"var":"a"}]}`,
+			data:   map[string]interface{}{"a": map[string]interface{}{}, "b": map[string]interface{}{}},
+			expect: true,
+		},
+		{
+			name:   "equal-coerced-mapref",
+			rule:   `{"==":[{"var":"a"},{"var":"b"}]}`,
+			data:   map[string]interface{}{"a": map[string]interface{}{}, "b": map[string]interface{}{}},
+			expect: false,
+		},
+		{
 			name:   "equal-strict",
 			rule:   `{"===" : [1, 1]}`,
 			expect: true,
@@ -847,7 +891,7 @@ func TestClauseEval(t *testing.T) {
 				}
 
 				v := cf(st.data)
-				assert.Equalf(t, st.expect, v, "response data")
+				assert.Equalf(t, st.expect, v, "response data for %v", st.rule)
 			})
 		})
 	}

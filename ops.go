@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 	"reflect"
-	"strconv"
 	"strings"
 	"unicode/utf8"
 )
@@ -422,16 +421,10 @@ func buildGreaterOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	}
 
 	return func(data interface{}) interface{} {
-		lVal := lArg(data)
-		rVal := rArg(data)
+		lVal := toNumber(lArg(data))
+		rVal := toNumber(rArg(data))
 
-		lFloat, lisfloat := lVal.(float64)
-		rFloat, risfloat := rVal.(float64)
-		if lisfloat && risfloat {
-			return lFloat > rFloat
-		}
-
-		panic("greater than disjoint types not implemented")
+		return lVal > rVal
 	}, nil
 }
 
@@ -457,16 +450,10 @@ func buildGreaterEqualOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	}
 
 	return func(data interface{}) interface{} {
-		lVal := lArg(data)
-		rVal := rArg(data)
+		lVal := toNumber(lArg(data))
+		rVal := toNumber(rArg(data))
 
-		lFloat, lisfloat := lVal.(float64)
-		rFloat, risfloat := rVal.(float64)
-		if lisfloat && risfloat {
-			return lFloat >= rFloat
-		}
-
-		panic("greater than disjoint types not implemented")
+		return lVal >= rVal
 	}, nil
 }
 
@@ -485,18 +472,11 @@ func buildBetweenExOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	}
 
 	return func(data interface{}) interface{} {
-		lVal := lArg(data)
-		mVal := mArg(data)
-		rVal := rArg(data)
+		lVal := toNumber(lArg(data))
+		mVal := toNumber(mArg(data))
+		rVal := toNumber(rArg(data))
 
-		lFloat, lisfloat := lVal.(float64)
-		mFloat, misfloat := mVal.(float64)
-		rFloat, risfloat := rVal.(float64)
-		if lisfloat && misfloat && risfloat {
-			return lFloat < mFloat && mFloat < rFloat
-		}
-
-		panic("less than disjoint types not implemented")
+		return lVal < mVal && mVal < rVal
 	}, nil
 }
 
@@ -515,18 +495,11 @@ func buildBetweenIncOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	}
 
 	return func(data interface{}) interface{} {
-		lVal := lArg(data)
-		mVal := mArg(data)
-		rVal := rArg(data)
+		lVal := toNumber(lArg(data))
+		mVal := toNumber(mArg(data))
+		rVal := toNumber(rArg(data))
 
-		lFloat, lisfloat := lVal.(float64)
-		mFloat, misfloat := mVal.(float64)
-		rFloat, risfloat := rVal.(float64)
-		if lisfloat && misfloat && risfloat {
-			return lFloat <= mFloat && mFloat <= rFloat
-		}
-
-		panic("less than disjoint types not implemented")
+		return lVal <= mVal && mVal <= rVal
 	}, nil
 }
 
@@ -550,16 +523,10 @@ func buildLessOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	}
 
 	return func(data interface{}) interface{} {
-		lVal := lArg(data)
-		rVal := rArg(data)
+		lVal := toNumber(lArg(data))
+		rVal := toNumber(rArg(data))
 
-		lFloat, lisfloat := lVal.(float64)
-		rFloat, risfloat := rVal.(float64)
-		if lisfloat && risfloat {
-			return lFloat < rFloat
-		}
-
-		panic("less than disjoint types not implemented")
+		return lVal < rVal
 	}, nil
 }
 
@@ -583,16 +550,10 @@ func buildLessEqualOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	}
 
 	return func(data interface{}) interface{} {
-		lVal := lArg(data)
-		rVal := rArg(data)
+		lVal := toNumber(lArg(data))
+		rVal := toNumber(rArg(data))
 
-		lFloat, lisfloat := lVal.(float64)
-		rFloat, risfloat := rVal.(float64)
-		if lisfloat && risfloat {
-			return lFloat <= rFloat
-		}
-
-		panic("less than or equal disjoint types not implemented")
+		return lVal <= rVal
 	}, nil
 }
 
@@ -614,13 +575,12 @@ func buildMaxOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	return func(data interface{}) interface{} {
 		resp := math.Inf(-1)
 		for _, ta := range termArgs {
-			item := ta(data)
-			floatitem, ok := item.(float64)
-			if !ok {
-				return nil
+			item := toNumber(ta(data))
+			if math.IsNaN(item) {
+				return item
 			}
-			if floatitem > resp {
-				resp = floatitem
+			if item > resp {
+				resp = item
 			}
 		}
 		return resp
@@ -645,13 +605,12 @@ func buildMinOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	return func(data interface{}) interface{} {
 		resp := math.Inf(1)
 		for _, ta := range termArgs {
-			item := ta(data)
-			floatitem, ok := item.(float64)
-			if !ok {
-				return nil
+			item := toNumber(ta(data))
+			if math.IsNaN(item) {
+				return item
 			}
-			if floatitem < resp {
-				resp = floatitem
+			if item < resp {
+				resp = item
 			}
 		}
 		return resp
@@ -740,19 +699,11 @@ func buildPlusOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	return func(data interface{}) interface{} {
 		resp := 0.0
 		for _, ta := range termArgs {
-			item := ta(data)
-			switch v := item.(type) {
-			case float64:
-				resp += v
-			case string:
-				f, err := strconv.ParseFloat(v, 64)
-				if err != nil {
-					continue
-				}
-				resp += f
-			default:
-				return nil
+			item := toNumber(ta(data))
+			if math.IsNaN(item) {
+				return item
 			}
+			resp += item
 		}
 		return resp
 	}, nil
@@ -765,19 +716,11 @@ func buildUnaryMinusOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	}
 
 	return func(data interface{}) interface{} {
-		v := arg(data)
-		switch v := v.(type) {
-		case float64:
-			return -1.0 * v
-		case string:
-			f, err := strconv.ParseFloat(v, 64)
-			if err != nil {
-				return nil
-			}
-			return -1.0 * f
-		default:
-			return nil
+		item := toNumber(arg(data))
+		if math.IsNaN(item) {
+			return item
 		}
+		return -1.0 * item
 	}, nil
 }
 
@@ -800,21 +743,20 @@ func buildMinusOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	}
 
 	return func(data interface{}) interface{} {
-		resp := termArgs[0](data)
-		respfloat, ok := resp.(float64)
-		if !ok {
-			return nil
+		resp := toNumber(termArgs[0](data))
+		if math.IsNaN(resp) {
+			return resp
 		}
 
 		for _, ta := range termArgs[1:] {
-			item := ta(data)
-			floatitem, ok := item.(float64)
-			if !ok {
-				return nil
+			item := toNumber(ta(data))
+			if math.IsNaN(item) {
+				return resp
 			}
-			respfloat -= floatitem
+
+			resp -= item
 		}
-		return respfloat
+		return resp
 	}, nil
 }
 
@@ -835,12 +777,11 @@ func buildMultiplyOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	return func(data interface{}) interface{} {
 		resp := 1.0
 		for _, ta := range termArgs {
-			item := ta(data)
-			floatitem, ok := item.(float64)
-			if !ok {
-				return nil
+			item := toNumber(ta(data))
+			if math.IsNaN(item) {
+				return item
 			}
-			resp *= floatitem
+			resp *= item
 		}
 		return resp
 	}, nil
@@ -861,15 +802,10 @@ func buildDivideOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	}
 
 	return func(data interface{}) interface{} {
-		lVal := lArg(data)
-		rVal := rArg(data)
+		lVal := toNumber(lArg(data))
+		rVal := toNumber(rArg(data))
 
-		lFloat, lisfloat := lVal.(float64)
-		rFloat, risfloat := rVal.(float64)
-		if !lisfloat || !risfloat || rFloat == 0 {
-			return nil
-		}
-		return lFloat / rFloat
+		return lVal / rVal
 	}, nil
 }
 
@@ -888,14 +824,10 @@ func buildModuloOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	}
 
 	return func(data interface{}) interface{} {
-		lVal := lArg(data)
-		rVal := rArg(data)
+		lVal := toNumber(lArg(data))
+		rVal := toNumber(rArg(data))
 
-		lFloat, lisfloat := lVal.(float64)
-		rFloat, risfloat := rVal.(float64)
-		if lisfloat && risfloat {
-			return math.Mod(lFloat, rFloat)
-		}
+		return math.Mod(lVal, rVal)
 
 		panic("modulo disjoint types not implemented")
 	}, nil
