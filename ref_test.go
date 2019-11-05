@@ -26,6 +26,12 @@ func TestDottedRef(t *testing.T) {
 			expect: nil,
 		},
 		{
+			name:   "bad-key",
+			data:   []interface{}{2.0},
+			ref:    false,
+			expect: nil,
+		},
+		{
 			name:   "single-found",
 			data:   map[string]interface{}{"one": 2.0},
 			ref:    "one",
