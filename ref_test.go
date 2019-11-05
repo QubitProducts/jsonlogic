@@ -68,6 +68,12 @@ func TestDottedRef(t *testing.T) {
 			expect: nil,
 		},
 		{
+			name:   "deep-non-trivial",
+			data:   map[string]interface{}{"one": map[string]interface{}{"two": []interface{}{[]interface{}{"hello", 2.0}}}},
+			ref:    "one.two.0.1",
+			expect: 2.0,
+		},
+		{
 			name:   "array-float",
 			data:   []interface{}{"hello", 2.0},
 			ref:    1.0,

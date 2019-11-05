@@ -130,33 +130,17 @@ func buildVarOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		// otherise, we assume this is an indexable type.
 		switch data := data.(type) {
 		case map[string]interface{}:
-			index, ok := indexVal.(string)
-			if ok && len(index) == 0 {
-				return data
-			}
 			v := DottedRef(data, indexVal)
 			if v != nil {
 				return v
 			}
-			return defaultVal
-
 		case []interface{}:
-			index, ok := indexVal.(float64)
-			intindex := int(index)
-
-			switch {
-			case
-				!ok,
-				float64(intindex) != index,
-				intindex < 0 || intindex >= len(data):
-
-				return defaultVal
-			default:
-				return data[intindex]
+			v := DottedRef(data, indexVal)
+			if v != nil {
+				return v
 			}
-		default:
-			return defaultVal
 		}
+		return defaultVal
 	}, nil
 }
 

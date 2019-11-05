@@ -147,6 +147,30 @@ func TestClauseEval(t *testing.T) {
 			},
 		},
 		{
+			name:   "var-lookup-not-found-with-data",
+			rule:   `{"var":"d"}`,
+			data:   map[string]interface{}{"a": 1},
+			expect: nil,
+		},
+		{
+			name:   "var-lookup-not-found-with-nil",
+			rule:   `{"var":"d"}`,
+			data:   nil,
+			expect: nil,
+		},
+		{
+			name:   "equal-nil",
+			rule:   `{"==":[{"var":"c"},{"var":"c"}]}`,
+			data:   nil,
+			expect: true,
+		},
+		{
+			name:   "equal-nil",
+			rule:   `{"==":[{"var":"c"},{"var":"d"}]}`,
+			data:   nil,
+			expect: true,
+		},
+		{
 			name:   "always",
 			rule:   `true`,
 			expect: true,
@@ -564,6 +588,18 @@ func TestClauseEval(t *testing.T) {
 			rule:   `{ "var" : 1 }`,
 			data:   []interface{}{"apple", "banana", "carrot"},
 			expect: "banana",
+		},
+		{
+			name:   "data-driven-array-deep",
+			rule:   `{ "var" : ["0.2"] }`,
+			data:   []interface{}{[]interface{}{"apple", "banana", "carrot"}},
+			expect: "carrot",
+		},
+		{
+			name:   "data-driven-array-deep-string",
+			rule:   `{ "var" : ["0.2"] }`,
+			data:   []interface{}{[]interface{}{"apple", "banana", "carrot"}},
+			expect: "carrot",
 		},
 		{
 			name: "data-driven-mixed",
