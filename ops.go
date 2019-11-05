@@ -380,22 +380,9 @@ func buildEqualOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 
 	return func(data interface{}) interface{} {
 		lVal := lArg(data)
-		_, lisstr := lVal.(string)
-		_, lisbool := lVal.(bool)
-
 		rVal := rArg(data)
-		_, risstr := rVal.(string)
-		_, risbool := rVal.(bool)
 
-		switch {
-		case lisstr || risstr:
-			return fmt.Sprintf("%v", lVal) == fmt.Sprintf("%v", rVal)
-		case lisbool || risbool:
-			return IsTrue(lVal) == IsTrue(rVal)
-		default:
-			return reflect.DeepEqual(lVal, rVal)
-		}
-
+		return IsSoftEqual(lVal, rVal)
 	}, nil
 }
 
@@ -696,7 +683,7 @@ func buildEqualThreeOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		lVal := lArg(data)
 		rVal := rArg(data)
 
-		return reflect.DeepEqual(lVal, rVal)
+		return IsEqual(lVal, rVal)
 	}, nil
 }
 
