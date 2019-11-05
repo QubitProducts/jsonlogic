@@ -2,7 +2,10 @@ package jsonlogic
 
 import (
 	"fmt"
+	"math"
 	"reflect"
+	"strconv"
+	"strings"
 )
 
 // IsTrue implements the truthy/falsy semantics of jsonlogic
@@ -25,8 +28,70 @@ func IsTrue(i interface{}) bool {
 	case bool:
 		return v
 	default:
-		panic(fmt.Errorf("unhandled type %T", i))
+		return true
 	}
+}
+
+func toNumber(i interface{}) interface{} {
+	switch v := i.(type) {
+	case string:
+		tstr := strings.TrimSpace(v)
+		if tstr == "" {
+			return 0.0
+		}
+		f, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			return math.NaN()
+		}
+		return f
+	case float64:
+		return v
+	case bool:
+		if v {
+			return 1.0
+		}
+		return 0.0
+	case []interface{}:
+		if len(v) == 0 {
+			return 0.0
+		}
+		if len(v) == 1 {
+			return toNumber(v[0])
+		}
+		return false
+	case nil:
+		return 0.0
+	default:
+		return math.NaN()
+	}
+}
+
+func toString(i interface{}) interface{} {
+	switch v := i.(type) {
+	case string:
+		return i
+	case float64:
+		return strconv.FormatFloat(v, 'f', -1, 64)
+	case bool:
+		if v {
+			return "true"
+		}
+		return "false"
+	case nil:
+		return "null"
+	case []interface{}:
+		var strs = make([]string, len(v))
+		for i := range v {
+			strs[i] = toString(v[i]).(string)
+		}
+		return strings.Join(strs, ",")
+	default:
+		return fmt.Sprintf("%v", v)
+	}
+}
+
+func toBool(i interface{}) (interface{}, bool) {
+	return IsTrue(i), true
 }
 
 // IsEqual is an exact equality check.
@@ -40,9 +105,11 @@ func IsEqual(l, r interface{}) bool {
 	_, risbool := r.(bool)
 
 	switch {
+	case l == nil && r == nil:
+		return true
 	case
-		lisbool && risbool,
 		lisfloat && risfloat,
+		lisbool && risbool,
 		lisstr && risstr:
 		return l == r
 	default:
@@ -62,6 +129,8 @@ func IsSoftEqual(l, r interface{}) bool {
 	_, risbool := r.(bool)
 
 	switch {
+	case l == nil && r == nil:
+		return true
 	case
 		lisbool && risbool,
 		lisfloat && risfloat,
