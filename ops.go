@@ -81,7 +81,7 @@ func falsef(data interface{}) interface{} {
 // operation.
 type OpsSet map[string]func(args Arguments, ops OpsSet) (ClauseFunc, error)
 
-func buildArgFunc(arg Argument, ops OpsSet) (ClauseFunc, error) {
+func BuildArgFunc(arg Argument, ops OpsSet) (ClauseFunc, error) {
 	if arg.Clause == nil {
 		return func(interface{}) interface{} {
 			return arg.Value
@@ -106,12 +106,12 @@ func buildVarOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	case len(args) == 0:
 		return identityf, nil
 	case len(args) >= 2:
-		if defaultArg, err = buildArgFunc(args[1], ops); err != nil {
+		if defaultArg, err = BuildArgFunc(args[1], ops); err != nil {
 			return nil, err
 		}
 		fallthrough
 	case len(args) >= 1:
-		if indexArg, err = buildArgFunc(args[0], ops); err != nil {
+		if indexArg, err = BuildArgFunc(args[0], ops); err != nil {
 			return nil, err
 		}
 	}
@@ -152,7 +152,7 @@ func buildMissingOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 
 	var termArgs []ClauseFunc
 	for _, a := range args {
-		termArg, err := buildArgFunc(a, ops)
+		termArg, err := BuildArgFunc(a, ops)
 		if err != nil {
 			return nil, err
 		}
@@ -177,12 +177,12 @@ func buildMissingSomeOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return emptySlice, nil
 	}
 
-	requiredArg, err := buildArgFunc(args[0], ops)
+	requiredArg, err := BuildArgFunc(args[0], ops)
 	if err != nil {
 		return nil, err
 	}
 
-	termsArg, err := buildArgFunc(args[1], ops)
+	termsArg, err := BuildArgFunc(args[1], ops)
 	if err != nil {
 		return nil, err
 	}
@@ -221,19 +221,19 @@ func buildMissingSomeOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 func buildIfOp3(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	var err error
 
-	termArg, err := buildArgFunc(args[0], ops)
+	termArg, err := BuildArgFunc(args[0], ops)
 	if err != nil {
 		return nil, err
 	}
 
-	lArg, err := buildArgFunc(args[1], ops)
+	lArg, err := BuildArgFunc(args[1], ops)
 	if err != nil {
 		return nil, err
 	}
 
 	rArg := nullf
 	if len(args) == 3 {
-		if rArg, err = buildArgFunc(args[2], ops); err != nil {
+		if rArg, err = BuildArgFunc(args[2], ops); err != nil {
 			return nil, err
 		}
 	}
@@ -252,7 +252,7 @@ func buildIfOp3(args Arguments, ops OpsSet) (ClauseFunc, error) {
 func buildIfOpMulti(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	var termArgs []ClauseFunc
 	for _, a := range args {
-		termArg, err := buildArgFunc(a, ops)
+		termArg, err := BuildArgFunc(a, ops)
 		if err != nil {
 			return nil, err
 		}
@@ -299,7 +299,7 @@ func buildAndOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 
 	var termArgs []ClauseFunc
 	for _, ta := range args {
-		termArg, err := buildArgFunc(ta, ops)
+		termArg, err := BuildArgFunc(ta, ops)
 		if err != nil {
 			return nil, err
 		}
@@ -325,7 +325,7 @@ func buildOrOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 
 	var termArgs []ClauseFunc
 	for _, ta := range args {
-		termArg, err := buildArgFunc(ta, ops)
+		termArg, err := BuildArgFunc(ta, ops)
 		if err != nil {
 			return nil, err
 		}
@@ -352,11 +352,11 @@ func buildEqualOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return falsef, nil
 	}
 
-	lArg, err := buildArgFunc(args[0], ops)
+	lArg, err := BuildArgFunc(args[0], ops)
 	if err != nil {
 		return nil, err
 	}
-	rArg, err := buildArgFunc(args[1], ops)
+	rArg, err := BuildArgFunc(args[1], ops)
 	if err != nil {
 		return nil, err
 	}
@@ -395,11 +395,11 @@ func buildGreaterOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		}, nil
 	}
 
-	lArg, err := buildArgFunc(args[0], ops)
+	lArg, err := BuildArgFunc(args[0], ops)
 	if err != nil {
 		return nil, err
 	}
-	rArg, err := buildArgFunc(args[1], ops)
+	rArg, err := BuildArgFunc(args[1], ops)
 	if err != nil {
 		return nil, err
 	}
@@ -424,11 +424,11 @@ func buildGreaterEqualOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		}, nil
 	}
 
-	lArg, err := buildArgFunc(args[0], ops)
+	lArg, err := BuildArgFunc(args[0], ops)
 	if err != nil {
 		return nil, err
 	}
-	rArg, err := buildArgFunc(args[1], ops)
+	rArg, err := BuildArgFunc(args[1], ops)
 	if err != nil {
 		return nil, err
 	}
@@ -442,15 +442,15 @@ func buildGreaterEqualOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 }
 
 func buildBetweenExOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
-	lArg, err := buildArgFunc(args[0], ops)
+	lArg, err := BuildArgFunc(args[0], ops)
 	if err != nil {
 		return nil, err
 	}
-	mArg, err := buildArgFunc(args[1], ops)
+	mArg, err := BuildArgFunc(args[1], ops)
 	if err != nil {
 		return nil, err
 	}
-	rArg, err := buildArgFunc(args[2], ops)
+	rArg, err := BuildArgFunc(args[2], ops)
 	if err != nil {
 		return nil, err
 	}
@@ -465,15 +465,15 @@ func buildBetweenExOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 }
 
 func buildBetweenIncOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
-	lArg, err := buildArgFunc(args[0], ops)
+	lArg, err := BuildArgFunc(args[0], ops)
 	if err != nil {
 		return nil, err
 	}
-	mArg, err := buildArgFunc(args[1], ops)
+	mArg, err := BuildArgFunc(args[1], ops)
 	if err != nil {
 		return nil, err
 	}
-	rArg, err := buildArgFunc(args[2], ops)
+	rArg, err := BuildArgFunc(args[2], ops)
 	if err != nil {
 		return nil, err
 	}
@@ -497,11 +497,11 @@ func buildLessOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return buildBetweenExOp(args, ops)
 	}
 
-	lArg, err := buildArgFunc(args[0], ops)
+	lArg, err := BuildArgFunc(args[0], ops)
 	if err != nil {
 		return nil, err
 	}
-	rArg, err := buildArgFunc(args[1], ops)
+	rArg, err := BuildArgFunc(args[1], ops)
 	if err != nil {
 		return nil, err
 	}
@@ -524,11 +524,11 @@ func buildLessEqualOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return buildBetweenIncOp(args, ops)
 	}
 
-	lArg, err := buildArgFunc(args[0], ops)
+	lArg, err := BuildArgFunc(args[0], ops)
 	if err != nil {
 		return nil, err
 	}
-	rArg, err := buildArgFunc(args[1], ops)
+	rArg, err := BuildArgFunc(args[1], ops)
 	if err != nil {
 		return nil, err
 	}
@@ -549,7 +549,7 @@ func buildMaxOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 
 	var termArgs []ClauseFunc
 	for _, a := range args {
-		termArg, err := buildArgFunc(a, ops)
+		termArg, err := BuildArgFunc(a, ops)
 		if err != nil {
 			return nil, err
 		}
@@ -579,7 +579,7 @@ func buildMinOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 
 	var termArgs []ClauseFunc
 	for _, a := range args {
-		termArg, err := buildArgFunc(a, ops)
+		termArg, err := BuildArgFunc(a, ops)
 		if err != nil {
 			return nil, err
 		}
@@ -609,11 +609,11 @@ func buildEqualThreeOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return falsef, nil
 	}
 
-	lArg, err := buildArgFunc(args[0], ops)
+	lArg, err := BuildArgFunc(args[0], ops)
 	if err != nil {
 		return nil, err
 	}
-	rArg, err := buildArgFunc(args[1], ops)
+	rArg, err := BuildArgFunc(args[1], ops)
 	if err != nil {
 		return nil, err
 	}
@@ -645,7 +645,7 @@ func buildNegateOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return truef, nil
 	}
 
-	lArg, err := buildArgFunc(args[0], ops)
+	lArg, err := BuildArgFunc(args[0], ops)
 	if err != nil {
 		return nil, err
 	}
@@ -660,7 +660,7 @@ func buildDoubleNegateOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return falsef, nil
 	}
 
-	lArg, err := buildArgFunc(args[0], ops)
+	lArg, err := BuildArgFunc(args[0], ops)
 	if err != nil {
 		return nil, err
 	}
@@ -673,7 +673,7 @@ func buildDoubleNegateOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 func buildPlusOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	var termArgs []ClauseFunc
 	for _, a := range args {
-		termArg, err := buildArgFunc(a, ops)
+		termArg, err := BuildArgFunc(a, ops)
 		if err != nil {
 			return nil, err
 		}
@@ -694,7 +694,7 @@ func buildPlusOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 }
 
 func buildUnaryMinusOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
-	arg, err := buildArgFunc(args[0], ops)
+	arg, err := BuildArgFunc(args[0], ops)
 	if err != nil {
 		return nil, err
 	}
@@ -719,7 +719,7 @@ func buildMinusOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 
 	var termArgs []ClauseFunc
 	for _, a := range args {
-		termArg, err := buildArgFunc(a, ops)
+		termArg, err := BuildArgFunc(a, ops)
 		if err != nil {
 			return nil, err
 		}
@@ -751,7 +751,7 @@ func buildMultiplyOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 
 	var termArgs []ClauseFunc
 	for _, a := range args {
-		termArg, err := buildArgFunc(a, ops)
+		termArg, err := BuildArgFunc(a, ops)
 		if err != nil {
 			return nil, err
 		}
@@ -776,11 +776,11 @@ func buildDivideOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nullf, nil
 	}
 
-	lArg, err := buildArgFunc(args[0], ops)
+	lArg, err := BuildArgFunc(args[0], ops)
 	if err != nil {
 		return nil, err
 	}
-	rArg, err := buildArgFunc(args[1], ops)
+	rArg, err := BuildArgFunc(args[1], ops)
 	if err != nil {
 		return nil, err
 	}
@@ -798,11 +798,11 @@ func buildModuloOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nullf, nil
 	}
 
-	lArg, err := buildArgFunc(args[0], ops)
+	lArg, err := BuildArgFunc(args[0], ops)
 	if err != nil {
 		return nil, err
 	}
-	rArg, err := buildArgFunc(args[1], ops)
+	rArg, err := BuildArgFunc(args[1], ops)
 	if err != nil {
 		return nil, err
 	}
@@ -825,7 +825,7 @@ func buildMergeOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 
 	var termArgs []ClauseFunc
 	for _, a := range args {
-		termArg, err := buildArgFunc(a, ops)
+		termArg, err := BuildArgFunc(a, ops)
 		if err != nil {
 			return nil, err
 		}
@@ -851,11 +851,11 @@ func buildInOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return falsef, nil
 	}
 
-	lArg, err := buildArgFunc(args[0], ops)
+	lArg, err := BuildArgFunc(args[0], ops)
 	if err != nil {
 		return nil, err
 	}
-	rArg, err := buildArgFunc(args[1], ops)
+	rArg, err := BuildArgFunc(args[1], ops)
 	if err != nil {
 		return nil, err
 	}
@@ -888,7 +888,7 @@ func buildInOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 func buildCatOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	var termArgs []ClauseFunc
 	for _, a := range args {
-		termArg, err := buildArgFunc(a, ops)
+		termArg, err := BuildArgFunc(a, ops)
 		if err != nil {
 			return nil, err
 		}
@@ -912,14 +912,14 @@ func buildSubstrOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		}, nil
 	}
 
-	lArg, err := buildArgFunc(args[0], ops)
+	lArg, err := BuildArgFunc(args[0], ops)
 	if err != nil {
 		return nil, err
 	}
 
 	offsetArg := nullf
 	if len(args) >= 2 {
-		offsetArg, err = buildArgFunc(args[1], ops)
+		offsetArg, err = BuildArgFunc(args[1], ops)
 		if err != nil {
 			return nil, err
 		}
@@ -927,7 +927,7 @@ func buildSubstrOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 
 	lengthArg := nullf
 	if len(args) >= 3 {
-		lengthArg, err = buildArgFunc(args[2], ops)
+		lengthArg, err = BuildArgFunc(args[2], ops)
 		if err != nil {
 			return nil, err
 		}
@@ -1012,12 +1012,12 @@ func buildMapOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nullf, nil
 	}
 
-	lArg, err := buildArgFunc(args[0], ops)
+	lArg, err := BuildArgFunc(args[0], ops)
 	if err != nil {
 		return nil, err
 	}
 
-	rArg, err := buildArgFunc(args[1], ops)
+	rArg, err := BuildArgFunc(args[1], ops)
 	if err != nil {
 		return nil, err
 	}
@@ -1044,12 +1044,12 @@ func buildFilterOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nullf, nil
 	}
 
-	lArg, err := buildArgFunc(args[0], ops)
+	lArg, err := BuildArgFunc(args[0], ops)
 	if err != nil {
 		return nil, err
 	}
 
-	rArg, err := buildArgFunc(args[1], ops)
+	rArg, err := BuildArgFunc(args[1], ops)
 	if err != nil {
 		return nil, err
 	}
@@ -1078,17 +1078,17 @@ func buildReduceOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nullf, nil
 	}
 
-	lArg, err := buildArgFunc(args[0], ops)
+	lArg, err := BuildArgFunc(args[0], ops)
 	if err != nil {
 		return nil, err
 	}
 
-	fArg, err := buildArgFunc(args[1], ops)
+	fArg, err := BuildArgFunc(args[1], ops)
 	if err != nil {
 		return nil, err
 	}
 
-	initialArg, err := buildArgFunc(args[2], ops)
+	initialArg, err := BuildArgFunc(args[2], ops)
 	if err != nil {
 		return nil, err
 	}
@@ -1118,12 +1118,12 @@ func buildAllOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nullf, nil
 	}
 
-	lArg, err := buildArgFunc(args[0], ops)
+	lArg, err := BuildArgFunc(args[0], ops)
 	if err != nil {
 		return nil, err
 	}
 
-	fArg, err := buildArgFunc(args[1], ops)
+	fArg, err := BuildArgFunc(args[1], ops)
 	if err != nil {
 		return nil, err
 	}
@@ -1153,12 +1153,12 @@ func buildSomeOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nullf, nil
 	}
 
-	lArg, err := buildArgFunc(args[0], ops)
+	lArg, err := BuildArgFunc(args[0], ops)
 	if err != nil {
 		return nil, err
 	}
 
-	fArg, err := buildArgFunc(args[1], ops)
+	fArg, err := BuildArgFunc(args[1], ops)
 	if err != nil {
 		return nil, err
 	}
@@ -1188,12 +1188,12 @@ func buildNoneOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nullf, nil
 	}
 
-	lArg, err := buildArgFunc(args[0], ops)
+	lArg, err := BuildArgFunc(args[0], ops)
 	if err != nil {
 		return nil, err
 	}
 
-	fArg, err := buildArgFunc(args[1], ops)
+	fArg, err := BuildArgFunc(args[1], ops)
 	if err != nil {
 		return nil, err
 	}
