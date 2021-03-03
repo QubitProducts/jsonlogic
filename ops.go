@@ -2,6 +2,7 @@ package jsonlogic
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"reflect"
 	"strings"
@@ -879,6 +880,15 @@ func buildInOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 				}
 			}
 			return false
+		case map[string]interface{}:
+			for k := range rval {
+				if reflect.DeepEqual(lval, k) {
+					return true
+				}
+			}
+			return false
+		default:
+			log.Printf("got here %#v", rval)
 		}
 
 		return res
