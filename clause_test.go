@@ -560,6 +560,12 @@ func TestClauseEval(t *testing.T) {
 			expect: float64(1),
 		},
 		{
+			name:   "data-driven-strings",
+			rule:   `{ "var" : ["a"] }`,
+			data:   map[string]interface{}{"a": []string{"a", "b", "c"}},
+			expect: []string{"a", "b", "c"},
+		},
+		{
 			name:   "data-driven-default",
 			rule:   `{ "var" : ["b",26] }`,
 			data:   map[string]interface{}{"a": float64(1)},
@@ -800,6 +806,19 @@ func TestClauseEval(t *testing.T) {
 			expect: true,
 		},
 		{
+			name:   "some-in",
+			rule:   `{"some" : [ ["a", "b", "c"], {"in":[{"var":""}, ["a"]]} ]}`,
+			expect: true,
+		},
+		{
+			name: "some-in-ref",
+			rule: `{"some" : [ {"var":"items"}, {"in":[{"var":""}, ["a"]]} ]}`,
+			data: map[string]interface{}{
+				"items": []interface{}{"a", "b", "c"},
+			},
+			expect: true,
+		},
+		{
 			name:   "merge-empty",
 			rule:   `{"merge" : [ ]}`,
 			data:   nil,
@@ -827,6 +846,12 @@ func TestClauseEval(t *testing.T) {
 			name:   "in-array",
 			rule:   `{"in":[true,"true"]}`,
 			data:   nil,
+			expect: true,
+		},
+		{
+			name:   "in-map",
+			rule:   `{"in": ["somekey", {"var": "a"}]}`,
+			data:   map[string]interface{}{"a": map[string]interface{}{"somekey": 1}},
 			expect: true,
 		},
 		{
@@ -906,6 +931,16 @@ func TestClauseEval(t *testing.T) {
 			rule:   `{"substr": ["jsonlogic", 4,-2]}`,
 			data:   nil,
 			expect: "log",
+		},
+		{
+			name: "recs",
+			rule: `{"and": [{"some": [{"var": "rec.categories"}, {"in": [{ "var": "" }, ["Dresses"]]}]}]}`,
+			data: map[string]interface{}{
+				"rec": map[string]interface{}{
+					"categories": []interface{}{"New", "Dresses", "Clothing"},
+				},
+			},
+			expect: true,
 		},
 	}
 
