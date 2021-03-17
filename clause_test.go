@@ -999,3 +999,23 @@ func BenchmarkFizzBuzz(b *testing.B) {
 		cf(data)
 	}
 }
+
+func BenchmarkIn(b *testing.B) {
+	b.ReportAllocs()
+	in := `{ "in": ["hello",["world","hello"]] }`
+
+	var c Clause
+	err := json.Unmarshal([]byte(in), &c)
+	if err != nil {
+		b.Fatalf("unmarshal failed, %v", err)
+	}
+
+	cf, err := Compile(&c)
+	if err != nil {
+		b.Fatalf("compile failed, %v", err)
+	}
+	b.ResetTimer()
+	for i := b.N; i >= 0; i-- {
+		cf(nil)
+	}
+}
