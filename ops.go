@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"math"
-	"reflect"
 	"strings"
 	"unicode/utf8"
 )
@@ -875,14 +874,14 @@ func buildInOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 			return false
 		case []interface{}:
 			for _, r := range rval {
-				if reflect.DeepEqual(lval, r) {
+				if IsDeepEqual(lval, r) {
 					return true
 				}
 			}
 			return false
 		case map[string]interface{}:
 			for k := range rval {
-				if reflect.DeepEqual(lval, k) {
+				if IsDeepEqual(lval, k) {
 					return true
 				}
 			}

@@ -178,3 +178,69 @@ func IsSoftEqual(l, r interface{}) bool {
 		return toNumber(l) == toNumber(r)
 	}
 }
+
+// IsDeepEqual is an equality check that will
+// coerce values according to JavaScript rules, and
+// compare map and array content..
+func IsDeepEqual(l, r interface{}) bool {
+	_, lisfloat := l.(float64)
+	_, lisstr := l.(string)
+	_, lisbool := l.(bool)
+	lslice, lisslice := l.([]interface{})
+	lmap, lismap := l.(map[string]interface{})
+
+	_, risfloat := r.(float64)
+	_, risstr := r.(string)
+	_, risbool := r.(bool)
+	rslice, risslice := r.([]interface{})
+	rmap, rismap := r.(map[string]interface{})
+
+	switch {
+	case l == nil && r == nil:
+		return true
+	case l == nil || r == nil:
+		return false
+	case lismap && rismap:
+		if len(lmap) != len(rmap) {
+			return false
+		}
+
+		for k, v := range lmap {
+			rv, ok := rmap[k]
+			if !ok {
+				return false
+			}
+			if !IsDeepEqual(v, rv) {
+				return false
+			}
+		}
+
+		return true
+	case lisslice && risslice:
+		if len(lslice) != len(rslice) {
+			return false
+		}
+
+		for i := range lslice {
+			if !IsDeepEqual(lslice[i], rslice[i]) {
+				return false
+			}
+		}
+
+		return true
+	case lisslice || risslice:
+		if lisslice {
+			return IsSoftEqual(toString(l), r)
+		}
+		return IsSoftEqual(l, toString(r))
+	case lismap || rismap:
+		return false
+	case
+		lisbool && risbool,
+		lisfloat && risfloat,
+		lisstr && risstr:
+		return l == r
+	default:
+		return toNumber(l) == toNumber(r)
+	}
+}
