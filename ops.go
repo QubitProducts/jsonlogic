@@ -1134,12 +1134,12 @@ func buildReduceOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 
 	return func(data interface{}) interface{} {
 		lval := lArg(data)
+		var acc = initialArg(data)
+
 		lslice, ok := lval.([]interface{})
 		if !ok {
-			return []interface{}{}
+			return acc
 		}
-
-		var acc = initialArg(data)
 
 		for _, subd := range lslice {
 			acc = fArg(map[string]interface{}{
