@@ -262,7 +262,7 @@ func buildIfOpMulti(args Arguments, ops OpsSet) (ClauseFunc, error) {
 
 	return func(data interface{}) interface{} {
 		last := 0
-		for i := 0; i <= len(termArgs)/2; i++ {
+		for i := 0; i < len(termArgs)/2; i++ {
 			lval := termArgs[i*2](data)
 			if IsTrue(lval) {
 				rval := termArgs[i*2+1](data)
@@ -270,9 +270,10 @@ func buildIfOpMulti(args Arguments, ops OpsSet) (ClauseFunc, error) {
 			}
 			last += 2
 		}
+
 		// got here, if there is a final term, it should
 		// be return
-		if last == len(termArgs) {
+		if last != len(termArgs) {
 			return termArgs[len(termArgs)-1](data)
 		}
 		return nil
