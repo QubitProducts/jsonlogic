@@ -147,7 +147,7 @@ func buildVarOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 func buildMissingOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	switch {
 	case len(args) == 0:
-		return identityf, nil
+		return emptySlice, nil
 	}
 
 	var termArgs []ClauseFunc
