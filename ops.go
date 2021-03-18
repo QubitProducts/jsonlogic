@@ -27,6 +27,7 @@ const (
 	doubleNegateOp  = "!!"
 	orOp            = "or"
 	andOp           = "and"
+	ternaryOp       = "?:"
 
 	// Numeric
 	greaterOp   = ">"  // TODO - non float
@@ -290,6 +291,37 @@ func buildIfOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return buildIfOpMulti(args, ops)
 	}
 
+}
+
+func buildTernaryOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	var err error
+
+	termArg, err := BuildArgFunc(args[0], ops)
+	if err != nil {
+		return nil, err
+	}
+
+	lArg, err := BuildArgFunc(args[1], ops)
+	if err != nil {
+		return nil, err
+	}
+
+	rArg := nullf
+	if len(args) == 3 {
+		if rArg, err = BuildArgFunc(args[2], ops); err != nil {
+			return nil, err
+		}
+	}
+
+	return func(data interface{}) interface{} {
+		termVal := termArg(data)
+		lVal := lArg(data)
+		rVal := rArg(data)
+		if IsTrue(termVal) {
+			return lVal
+		}
+		return rVal
+	}, nil
 }
 
 func buildAndOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
@@ -1245,6 +1277,7 @@ var DefaultOps = OpsSet{
 	missingOp:       buildMissingOp,
 	missingSomeOp:   buildMissingSomeOp,
 	ifOp:            buildIfOp,
+	ternaryOp:       buildTernaryOp,
 	andOp:           buildAndOp,
 	orOp:            buildOrOp,
 	equalOp:         buildEqualOp,
