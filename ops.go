@@ -2,7 +2,6 @@ package jsonlogic
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"strings"
 	"unicode/utf8"
@@ -285,13 +284,12 @@ func buildIfOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	case len(args) == 0:
 		return nullf, nil
 	case len(args) == 1:
-		return identityf, nil
+		return BuildArgFunc(args[0], ops)
 	case len(args) <= 3:
 		return buildIfOp3(args, ops)
 	default:
 		return buildIfOpMulti(args, ops)
 	}
-
 }
 
 func buildTernaryOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
@@ -920,7 +918,6 @@ func buildInOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 			}
 			return false
 		default:
-			log.Printf("got here %#v", rval)
 		}
 
 		return res
