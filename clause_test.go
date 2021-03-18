@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -448,6 +450,12 @@ func TestClauseEval(t *testing.T) {
 			name:   "less-with-data",
 			rule:   `{ "<": [0, {"var":"temp"}, 100]}`,
 			data:   map[string]interface{}{"temp": 37.0},
+			expect: true,
+		},
+		{
+			name:   "less-with-data-",
+			rule:   `{ "<": [0, {"var":"thing.temp"}, 100]}`,
+			data:   map[string]interface{}{"thing": map[string]interface{}{"temp": 37.0}},
 			expect: true,
 		},
 		{
@@ -942,6 +950,49 @@ func TestClauseEval(t *testing.T) {
 			},
 			expect: true,
 		},
+		{
+			name: "agh",
+			rule: `{"and": [
+									{"<": [20, {"var": "rec.price"}, 30]},
+									{"===": [{"var": "rec.currency"}, "USD"]}
+							]}`,
+			expect: true,
+			data:   map[string]interface{}{"rec": map[string]interface{}{"price": 25.0, "currency": "USD"}},
+		},
+		{
+			name: "agh2",
+			rule: `{"and": [
+									{"===": [{"var": "rec.currency"}, "USD"]}
+							]}`,
+			expect: true,
+			data:   map[string]interface{}{"rec": map[string]interface{}{"price": 25.0, "currency": "USD"}},
+		},
+		{
+			name: "agh3",
+			rule: `{"and": [
+									{"<": [20, {"var": "rec.price"}, 30]}
+							]}`,
+			expect: true,
+			data:   map[string]interface{}{"rec": map[string]interface{}{"price": 25.0, "currency": "USD"}},
+		},
+		{
+			name:   "agh4",
+			rule:   `{"<": [20, {"var": "rec.price"}, 30]}`,
+			expect: true,
+			data:   map[string]interface{}{"rec": map[string]interface{}{"price": 25.0, "currency": "USD"}},
+		},
+		{
+			name:   "agh4",
+			rule:   `{"<": [20, {"var": "rec.price"}, 30]}`,
+			expect: true,
+			data:   map[string]interface{}{"rec": map[string]interface{}{"price": 25.0, "currency": "USD"}},
+		},
+		{
+			name:   "agh5",
+			rule:   `{"some": [{"merge":[{"var":"rec.name"}]}, {"===":[{"var": ""},"hello"]}]}`,
+			expect: true,
+			data:   map[string]interface{}{"rec": map[string]interface{}{"name": "hello"}},
+		},
 	}
 
 	for _, st := range tests {
@@ -1017,5 +1068,71 @@ func BenchmarkIn(b *testing.B) {
 	b.ResetTimer()
 	for i := b.N; i >= 0; i-- {
 		cf(nil)
+	}
+}
+
+func TestClause_testsuite(t *testing.T) {
+	tests := []json.RawMessage{}
+
+	bs, err := os.ReadFile("testdata/tests.json")
+	if err != nil {
+		t.Fatalf("could not open testfile, %v", err)
+	}
+	err = json.Unmarshal(bs, &tests)
+	if err != nil {
+		t.Fatalf("could not unmarshal testdata, %v", err)
+	}
+
+	section := ""
+	sectionEntry := 0
+	for i, tline := range tests {
+		i := i
+		var newSection string
+		err = json.Unmarshal(tline, &newSection)
+		if err == nil {
+			section = newSection
+			sectionEntry = 0
+			continue
+		}
+
+		var details [3]json.RawMessage
+		err = json.Unmarshal(tline, &details)
+		if err != nil {
+			t.Skipf("couldm't unmarshal test case line %d", i)
+		}
+
+		t.Run(fmt.Sprintf("%d %s[%d]", i, section, sectionEntry), func(t *testing.T) {
+			var data interface{}
+			err = json.Unmarshal(details[1], &data)
+			if err != nil {
+				t.Skipf("could not unmarshal test data, %v", err)
+			}
+
+			var exp interface{}
+			err = json.Unmarshal(details[2], &exp)
+			if err != nil {
+				t.Skipf("could not unmarshal test result, %v", err)
+			}
+
+			var cls Clause
+			err = json.Unmarshal(details[0], &cls)
+			if err != nil {
+				t.Errorf("could not unmarshal test clause, %v", err)
+				return
+			}
+
+			cf, err := Compile(&cls)
+			if err != nil {
+				t.Errorf("could not compile test clause, %v", err)
+				return
+			}
+
+			got := cf(data)
+
+			if diff := cmp.Diff(exp, got); len(diff) != 0 {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+		sectionEntry++
 	}
 }
