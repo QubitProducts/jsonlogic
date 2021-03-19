@@ -81,6 +81,10 @@ func falsef(data interface{}) interface{} {
 // operation.
 type OpsSet map[string]func(args Arguments, ops OpsSet) (ClauseFunc, error)
 
+// BuildArgFunc is a utility function for building new operations. It should
+// be called once for each argument during compilation, and the resulting function
+// should be call at execution time, to retrieve the calculated value of the
+// argument.
 func BuildArgFunc(arg Argument, ops OpsSet) (ClauseFunc, error) {
 	if arg.Clause == nil {
 		return func(interface{}) interface{} {

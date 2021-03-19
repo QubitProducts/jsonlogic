@@ -1,6 +1,7 @@
 // Package jsonlogic is a Go implementation of the jsonlogic as described.
 // ar http://jsonlogic.com.  All example content for all operations, as given on
-// the web site work as expected.
+// the web site work as expected. The test suite provided at
+// https://jsonlogic.com/tests.json passes unaltered
 //
 // var data lookup assumes the parsed in data scructure is akin to that
 // provided  by a raw json.Unmarshal. That is only the following types are
