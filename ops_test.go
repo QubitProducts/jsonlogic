@@ -1,6 +1,7 @@
 package jsonlogic_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -35,7 +36,7 @@ func ExampleOpsSet() {
 		// We want two args, 1 for the data we are going to match, and one
 		// for the regex itself.
 		if len(args) < 2 {
-			return func(data interface{}) interface{} {
+			return func(ctx context.Context, data interface{}) interface{} {
 				return false
 			}, nil
 		}
@@ -55,10 +56,10 @@ func ExampleOpsSet() {
 			return nil, err
 		}
 
-		return func(data interface{}) interface{} {
+		return func(ctx context.Context, data interface{}) interface{} {
 			// We evaluate the first argument, using
 			// the data the user provided.
-			lval := lArg(data)
+			lval := lArg(ctx, data)
 			lstr, ok := lval.(string)
 			if !ok {
 				// We only match against strings, everything else
@@ -68,7 +69,7 @@ func ExampleOpsSet() {
 
 			// We evaluate the second argument, using
 			// the data the user provided.
-			rval := rArg(data)
+			rval := rArg(ctx, data)
 			rstr, ok := rval.(string)
 			if !ok {
 				// We can only build regexp out of strings.
@@ -103,8 +104,9 @@ func ExampleOpsSet() {
 		`that doesn't`,
 		float64(1),
 	}
+	ctx := context.Background()
 	for _, t := range tests {
-		fmt.Printf("match(%#v) = %v\n", t, jsonlogic.IsTrue(cf(t)))
+		fmt.Printf("match(%#v) = %v\n", t, jsonlogic.IsTrue(cf(ctx, t)))
 	}
 	// Output:
 	// match("this matches") = true

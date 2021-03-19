@@ -1,6 +1,7 @@
 package jsonlogic
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"strings"
@@ -57,23 +58,30 @@ const (
 	substrOp = "substr"
 )
 
-func identityf(data interface{}) interface{} {
+// ClauseFunc takes input data, returns a result which
+// could be any valid json type. jsonlogic seems to
+// prefer returning null to returning any specific errors.
+// The context argument is not used by any of the standard operations,
+// but may be used by custom operations to provide rich functionality.
+type ClauseFunc func(ctx context.Context, data interface{}) interface{}
+
+func identityf(ctx context.Context, data interface{}) interface{} {
 	return data
 }
 
-func nullf(data interface{}) interface{} {
+func nullf(ctx context.Context, data interface{}) interface{} {
 	return nil
 }
 
-func emptySlice(interface{}) interface{} {
+func emptySlice(ctx context.Context, data interface{}) interface{} {
 	return []interface{}{}
 }
 
-func truef(data interface{}) interface{} {
+func truef(ctx context.Context, data interface{}) interface{} {
 	return true
 }
 
-func falsef(data interface{}) interface{} {
+func falsef(ctx context.Context, data interface{}) interface{} {
 	return false
 }
 
@@ -87,7 +95,7 @@ type OpsSet map[string]func(args Arguments, ops OpsSet) (ClauseFunc, error)
 // argument.
 func BuildArgFunc(arg Argument, ops OpsSet) (ClauseFunc, error) {
 	if arg.Clause == nil {
-		return func(interface{}) interface{} {
+		return func(context.Context, interface{}) interface{} {
 			return arg.Value
 		}, nil
 	}
@@ -95,7 +103,7 @@ func BuildArgFunc(arg Argument, ops OpsSet) (ClauseFunc, error) {
 }
 
 func buildNullOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
-	return func(data interface{}) interface{} {
+	return func(ctx context.Context, data interface{}) interface{} {
 		return args[0].Value
 	}, nil
 }
@@ -120,9 +128,9 @@ func buildVarOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		}
 	}
 
-	return func(data interface{}) interface{} {
-		indexVal := indexArg(data)
-		defaultVal := defaultArg(data)
+	return func(ctx context.Context, data interface{}) interface{} {
+		indexVal := indexArg(ctx, data)
+		defaultVal := defaultArg(ctx, data)
 
 		// if the index is an empty string, we don't care about
 		// the type and return the entire thing.
@@ -163,12 +171,12 @@ func buildMissingOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		termArgs = append(termArgs, termArg)
 	}
 
-	return func(data interface{}) interface{} {
+	return func(ctx context.Context, data interface{}) interface{} {
 		resp := []interface{}{}
 		checkItems := []interface{}{}
 
 		for _, ta := range termArgs {
-			item := ta(data)
+			item := ta(ctx, data)
 			if sliceitem, ok := item.([]interface{}); ok {
 				checkItems = append(checkItems, sliceitem...)
 				continue
@@ -201,15 +209,15 @@ func buildMissingSomeOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nil, err
 	}
 
-	return func(data interface{}) interface{} {
+	return func(ctx context.Context, data interface{}) interface{} {
 		resp := []interface{}{}
-		required := requiredArg(data)
+		required := requiredArg(ctx, data)
 		requiredfloat, ok := required.(float64)
 		if !ok {
 			return resp
 		}
 
-		terms := termsArg(data)
+		terms := termsArg(ctx, data)
 		termsslice, ok := terms.([]interface{})
 		if !ok {
 			return resp
@@ -252,10 +260,10 @@ func buildIfOp3(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		}
 	}
 
-	return func(data interface{}) interface{} {
-		termVal := termArg(data)
-		lVal := lArg(data)
-		rVal := rArg(data)
+	return func(ctx context.Context, data interface{}) interface{} {
+		termVal := termArg(ctx, data)
+		lVal := lArg(ctx, data)
+		rVal := rArg(ctx, data)
 		if IsTrue(termVal) {
 			return lVal
 		}
@@ -273,12 +281,12 @@ func buildIfOpMulti(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		termArgs = append(termArgs, termArg)
 	}
 
-	return func(data interface{}) interface{} {
+	return func(ctx context.Context, data interface{}) interface{} {
 		last := 0
 		for i := 0; i < len(termArgs)/2; i++ {
-			lval := termArgs[i*2](data)
+			lval := termArgs[i*2](ctx, data)
 			if IsTrue(lval) {
-				rval := termArgs[i*2+1](data)
+				rval := termArgs[i*2+1](ctx, data)
 				return rval
 			}
 			last += 2
@@ -287,7 +295,7 @@ func buildIfOpMulti(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		// got here, if there is a final term, it should
 		// be return
 		if last != len(termArgs) {
-			return termArgs[len(termArgs)-1](data)
+			return termArgs[len(termArgs)-1](ctx, data)
 		}
 		return nil
 	}, nil
@@ -326,10 +334,10 @@ func buildTernaryOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		}
 	}
 
-	return func(data interface{}) interface{} {
-		termVal := termArg(data)
-		lVal := lArg(data)
-		rVal := rArg(data)
+	return func(ctx context.Context, data interface{}) interface{} {
+		termVal := termArg(ctx, data)
+		lVal := lArg(ctx, data)
+		rVal := rArg(ctx, data)
 		if IsTrue(termVal) {
 			return lVal
 		}
@@ -351,10 +359,10 @@ func buildAndOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		termArgs = append(termArgs, termArg)
 	}
 
-	return func(data interface{}) interface{} {
+	return func(ctx context.Context, data interface{}) interface{} {
 		var lastArg interface{}
 		for _, t := range termArgs {
-			lastArg = t(data)
+			lastArg = t(ctx, data)
 			if !IsTrue(lastArg) {
 				return lastArg
 			}
@@ -377,10 +385,10 @@ func buildOrOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		termArgs = append(termArgs, termArg)
 	}
 
-	return func(data interface{}) interface{} {
+	return func(ctx context.Context, data interface{}) interface{} {
 		var lastArg interface{}
 		for _, t := range termArgs {
-			lastArg = t(data)
+			lastArg = t(ctx, data)
 			if IsTrue(lastArg) {
 				return lastArg
 			}
@@ -406,9 +414,9 @@ func buildEqualOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nil, err
 	}
 
-	return func(data interface{}) interface{} {
-		lVal := lArg(data)
-		rVal := rArg(data)
+	return func(ctx context.Context, data interface{}) interface{} {
+		lVal := lArg(ctx, data)
+		rVal := rArg(ctx, data)
 
 		return IsSoftEqual(lVal, rVal)
 	}, nil
@@ -420,8 +428,8 @@ func buildNotEqualOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nil, err
 	}
 
-	return func(data interface{}) interface{} {
-		if eqres, ok := eqf(data).(bool); ok {
+	return func(ctx context.Context, data interface{}) interface{} {
+		if eqres, ok := eqf(ctx, data).(bool); ok {
 			return !eqres
 		}
 		return false
@@ -431,11 +439,11 @@ func buildNotEqualOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 func buildGreaterOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	switch {
 	case len(args) == 0:
-		return func(data interface{}) interface{} {
+		return func(ctx context.Context, data interface{}) interface{} {
 			return false
 		}, nil
 	case len(args) == 1:
-		return func(data interface{}) interface{} {
+		return func(ctx context.Context, data interface{}) interface{} {
 			return false
 		}, nil
 	}
@@ -449,9 +457,9 @@ func buildGreaterOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nil, err
 	}
 
-	return func(data interface{}) interface{} {
-		lVal := toNumber(lArg(data))
-		rVal := toNumber(rArg(data))
+	return func(ctx context.Context, data interface{}) interface{} {
+		lVal := toNumber(lArg(ctx, data))
+		rVal := toNumber(rArg(ctx, data))
 
 		return lVal > rVal
 	}, nil
@@ -460,11 +468,11 @@ func buildGreaterOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 func buildGreaterEqualOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	switch {
 	case len(args) == 0:
-		return func(data interface{}) interface{} {
+		return func(ctx context.Context, data interface{}) interface{} {
 			return false
 		}, nil
 	case len(args) == 1:
-		return func(data interface{}) interface{} {
+		return func(ctx context.Context, data interface{}) interface{} {
 			return false
 		}, nil
 	}
@@ -478,9 +486,9 @@ func buildGreaterEqualOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nil, err
 	}
 
-	return func(data interface{}) interface{} {
-		lVal := toNumber(lArg(data))
-		rVal := toNumber(rArg(data))
+	return func(ctx context.Context, data interface{}) interface{} {
+		lVal := toNumber(lArg(ctx, data))
+		rVal := toNumber(rArg(ctx, data))
 
 		return lVal >= rVal
 	}, nil
@@ -500,10 +508,10 @@ func buildBetweenExOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nil, err
 	}
 
-	return func(data interface{}) interface{} {
-		lVal := toNumber(lArg(data))
-		mVal := toNumber(mArg(data))
-		rVal := toNumber(rArg(data))
+	return func(ctx context.Context, data interface{}) interface{} {
+		lVal := toNumber(lArg(ctx, data))
+		mVal := toNumber(mArg(ctx, data))
+		rVal := toNumber(rArg(ctx, data))
 
 		return lVal < mVal && mVal < rVal
 	}, nil
@@ -523,10 +531,10 @@ func buildBetweenIncOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nil, err
 	}
 
-	return func(data interface{}) interface{} {
-		lVal := toNumber(lArg(data))
-		mVal := toNumber(mArg(data))
-		rVal := toNumber(rArg(data))
+	return func(ctx context.Context, data interface{}) interface{} {
+		lVal := toNumber(lArg(ctx, data))
+		mVal := toNumber(mArg(ctx, data))
+		rVal := toNumber(rArg(ctx, data))
 
 		return lVal <= mVal && mVal <= rVal
 	}, nil
@@ -534,7 +542,7 @@ func buildBetweenIncOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 
 func buildLessOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	if len(args) < 2 {
-		return func(data interface{}) interface{} {
+		return func(ctx context.Context, data interface{}) interface{} {
 			return false
 		}, nil
 	}
@@ -551,9 +559,9 @@ func buildLessOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nil, err
 	}
 
-	return func(data interface{}) interface{} {
-		lVal := toNumber(lArg(data))
-		rVal := toNumber(rArg(data))
+	return func(ctx context.Context, data interface{}) interface{} {
+		lVal := toNumber(lArg(ctx, data))
+		rVal := toNumber(rArg(ctx, data))
 
 		return lVal < rVal
 	}, nil
@@ -561,7 +569,7 @@ func buildLessOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 
 func buildLessEqualOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	if len(args) < 2 {
-		return func(data interface{}) interface{} {
+		return func(ctx context.Context, data interface{}) interface{} {
 			return false
 		}, nil
 	}
@@ -578,9 +586,9 @@ func buildLessEqualOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nil, err
 	}
 
-	return func(data interface{}) interface{} {
-		lVal := toNumber(lArg(data))
-		rVal := toNumber(rArg(data))
+	return func(ctx context.Context, data interface{}) interface{} {
+		lVal := toNumber(lArg(ctx, data))
+		rVal := toNumber(rArg(ctx, data))
 
 		return lVal <= rVal
 	}, nil
@@ -601,10 +609,10 @@ func buildMaxOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		termArgs = append(termArgs, termArg)
 	}
 
-	return func(data interface{}) interface{} {
+	return func(ctx context.Context, data interface{}) interface{} {
 		resp := math.Inf(-1)
 		for _, ta := range termArgs {
-			item := toNumber(ta(data))
+			item := toNumber(ta(ctx, data))
 			if math.IsNaN(item) {
 				return item
 			}
@@ -631,10 +639,10 @@ func buildMinOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		termArgs = append(termArgs, termArg)
 	}
 
-	return func(data interface{}) interface{} {
+	return func(ctx context.Context, data interface{}) interface{} {
 		resp := math.Inf(1)
 		for _, ta := range termArgs {
-			item := toNumber(ta(data))
+			item := toNumber(ta(ctx, data))
 			if math.IsNaN(item) {
 				return item
 			}
@@ -663,9 +671,9 @@ func buildEqualThreeOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nil, err
 	}
 
-	return func(data interface{}) interface{} {
-		lVal := lArg(data)
-		rVal := rArg(data)
+	return func(ctx context.Context, data interface{}) interface{} {
+		lVal := lArg(ctx, data)
+		rVal := rArg(ctx, data)
 
 		return IsEqual(lVal, rVal)
 	}, nil
@@ -677,8 +685,8 @@ func buildNotEqualThreeOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nil, err
 	}
 
-	return func(data interface{}) interface{} {
-		if eqres, ok := eqf(data).(bool); ok {
+	return func(ctx context.Context, data interface{}) interface{} {
+		if eqres, ok := eqf(ctx, data).(bool); ok {
 			return !eqres
 		}
 		return false
@@ -695,8 +703,8 @@ func buildNegateOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nil, err
 	}
 
-	return func(data interface{}) interface{} {
-		return !IsTrue(lArg(data))
+	return func(ctx context.Context, data interface{}) interface{} {
+		return !IsTrue(lArg(ctx, data))
 	}, nil
 }
 
@@ -710,8 +718,8 @@ func buildDoubleNegateOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nil, err
 	}
 
-	return func(data interface{}) interface{} {
-		return IsTrue(lArg(data))
+	return func(ctx context.Context, data interface{}) interface{} {
+		return IsTrue(lArg(ctx, data))
 	}, nil
 }
 
@@ -725,10 +733,10 @@ func buildPlusOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		termArgs = append(termArgs, termArg)
 	}
 
-	return func(data interface{}) interface{} {
+	return func(ctx context.Context, data interface{}) interface{} {
 		resp := 0.0
 		for _, ta := range termArgs {
-			item := toNumber(ta(data))
+			item := toNumber(ta(ctx, data))
 			if math.IsNaN(item) {
 				return item
 			}
@@ -744,8 +752,8 @@ func buildUnaryMinusOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nil, err
 	}
 
-	return func(data interface{}) interface{} {
-		item := toNumber(arg(data))
+	return func(ctx context.Context, data interface{}) interface{} {
+		item := toNumber(arg(ctx, data))
 		if math.IsNaN(item) {
 			return item
 		}
@@ -771,14 +779,14 @@ func buildMinusOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		termArgs = append(termArgs, termArg)
 	}
 
-	return func(data interface{}) interface{} {
-		resp := toNumber(termArgs[0](data))
+	return func(ctx context.Context, data interface{}) interface{} {
+		resp := toNumber(termArgs[0](ctx, data))
 		if math.IsNaN(resp) {
 			return resp
 		}
 
 		for _, ta := range termArgs[1:] {
-			item := toNumber(ta(data))
+			item := toNumber(ta(ctx, data))
 			if math.IsNaN(item) {
 				return resp
 			}
@@ -803,10 +811,10 @@ func buildMultiplyOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		termArgs = append(termArgs, termArg)
 	}
 
-	return func(data interface{}) interface{} {
+	return func(ctx context.Context, data interface{}) interface{} {
 		resp := 1.0
 		for _, ta := range termArgs {
-			item := toNumber(ta(data))
+			item := toNumber(ta(ctx, data))
 			if math.IsNaN(item) {
 				return item
 			}
@@ -830,9 +838,9 @@ func buildDivideOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nil, err
 	}
 
-	return func(data interface{}) interface{} {
-		lVal := toNumber(lArg(data))
-		rVal := toNumber(rArg(data))
+	return func(ctx context.Context, data interface{}) interface{} {
+		lVal := toNumber(lArg(ctx, data))
+		rVal := toNumber(rArg(ctx, data))
 
 		return lVal / rVal
 	}, nil
@@ -852,9 +860,9 @@ func buildModuloOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nil, err
 	}
 
-	return func(data interface{}) interface{} {
-		lVal := toNumber(lArg(data))
-		rVal := toNumber(rArg(data))
+	return func(ctx context.Context, data interface{}) interface{} {
+		lVal := toNumber(lArg(ctx, data))
+		rVal := toNumber(rArg(ctx, data))
 
 		return math.Mod(lVal, rVal)
 	}, nil
@@ -875,10 +883,10 @@ func buildMergeOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		termArgs = append(termArgs, termArg)
 	}
 
-	return func(data interface{}) interface{} {
+	return func(ctx context.Context, data interface{}) interface{} {
 		resp := []interface{}{}
 		for _, ta := range termArgs {
-			item := ta(data)
+			item := ta(ctx, data)
 			sliceitem, ok := item.([]interface{})
 			if !ok {
 				sliceitem = []interface{}{item}
@@ -903,10 +911,10 @@ func buildInOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nil, err
 	}
 
-	return func(data interface{}) interface{} {
+	return func(ctx context.Context, data interface{}) interface{} {
 		res := false
-		lval := lArg(data)
-		rval := rArg(data)
+		lval := lArg(ctx, data)
+		rval := rArg(ctx, data)
 
 		switch rval := rval.(type) {
 		case string:
@@ -946,10 +954,10 @@ func buildCatOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		termArgs = append(termArgs, termArg)
 	}
 
-	return func(data interface{}) interface{} {
+	return func(ctx context.Context, data interface{}) interface{} {
 		resp := ""
 		for _, ta := range termArgs {
-			resp += fmt.Sprintf("%v", ta(data))
+			resp += fmt.Sprintf("%v", ta(ctx, data))
 		}
 		return resp
 	}, nil
@@ -958,7 +966,7 @@ func buildCatOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 func buildSubstrOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	var err error
 	if len(args) == 0 {
-		return func(interface{}) interface{} {
+		return func(ctx context.Context, data interface{}) interface{} {
 			return "undefined"
 		}, nil
 	}
@@ -984,10 +992,10 @@ func buildSubstrOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		}
 	}
 
-	return func(data interface{}) interface{} {
-		lVal := lArg(data)
-		offsetVal := offsetArg(data)
-		lengthVal := lengthArg(data)
+	return func(ctx context.Context, data interface{}) interface{} {
+		lVal := lArg(ctx, data)
+		offsetVal := offsetArg(ctx, data)
+		lengthVal := lengthArg(ctx, data)
 
 		var base string
 		var ok bool
@@ -1073,8 +1081,8 @@ func buildMapOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nil, err
 	}
 
-	return func(data interface{}) interface{} {
-		lval := lArg(data)
+	return func(ctx context.Context, data interface{}) interface{} {
+		lval := lArg(ctx, data)
 		lslice, ok := lval.([]interface{})
 		if !ok {
 			return []interface{}{}
@@ -1083,7 +1091,7 @@ func buildMapOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		resp := make([]interface{}, len(lslice))
 
 		for i, subd := range lslice {
-			resp[i] = rArg(subd)
+			resp[i] = rArg(ctx, subd)
 		}
 
 		return resp
@@ -1105,8 +1113,8 @@ func buildFilterOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nil, err
 	}
 
-	return func(data interface{}) interface{} {
-		lval := lArg(data)
+	return func(ctx context.Context, data interface{}) interface{} {
+		lval := lArg(ctx, data)
 		lslice, ok := lval.([]interface{})
 		if !ok {
 			return []interface{}{}
@@ -1115,7 +1123,7 @@ func buildFilterOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		resp := []interface{}{}
 
 		for _, subd := range lslice {
-			if IsTrue(rArg(subd)) {
+			if IsTrue(rArg(ctx, subd)) {
 				resp = append(resp, subd)
 			}
 		}
@@ -1144,9 +1152,9 @@ func buildReduceOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nil, err
 	}
 
-	return func(data interface{}) interface{} {
-		lval := lArg(data)
-		var acc = initialArg(data)
+	return func(ctx context.Context, data interface{}) interface{} {
+		lval := lArg(ctx, data)
+		var acc = initialArg(ctx, data)
 
 		lslice, ok := lval.([]interface{})
 		if !ok {
@@ -1154,7 +1162,7 @@ func buildReduceOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		}
 
 		for _, subd := range lslice {
-			acc = fArg(map[string]interface{}{
+			acc = fArg(ctx, map[string]interface{}{
 				"current":     subd,
 				"accumulator": acc,
 			})
@@ -1179,8 +1187,8 @@ func buildAllOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nil, err
 	}
 
-	return func(data interface{}) interface{} {
-		lval := lArg(data)
+	return func(ctx context.Context, data interface{}) interface{} {
+		lval := lArg(ctx, data)
 		lslice, ok := lval.([]interface{})
 		if !ok {
 			return []interface{}{}
@@ -1190,7 +1198,7 @@ func buildAllOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		}
 
 		for _, subd := range lslice {
-			if !IsTrue(fArg(subd)) {
+			if !IsTrue(fArg(ctx, subd)) {
 				return false
 			}
 		}
@@ -1214,8 +1222,8 @@ func buildSomeOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nil, err
 	}
 
-	return func(data interface{}) interface{} {
-		lval := lArg(data)
+	return func(ctx context.Context, data interface{}) interface{} {
+		lval := lArg(ctx, data)
 		lslice, ok := lval.([]interface{})
 		if !ok {
 			return []interface{}{}
@@ -1225,7 +1233,7 @@ func buildSomeOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		}
 
 		for _, subd := range lslice {
-			if IsTrue(fArg(subd)) {
+			if IsTrue(fArg(ctx, subd)) {
 				return true
 			}
 		}
@@ -1249,8 +1257,8 @@ func buildNoneOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nil, err
 	}
 
-	return func(data interface{}) interface{} {
-		lval := lArg(data)
+	return func(ctx context.Context, data interface{}) interface{} {
+		lval := lArg(ctx, data)
 		lslice, ok := lval.([]interface{})
 		if !ok {
 			return []interface{}{}
@@ -1260,7 +1268,7 @@ func buildNoneOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		}
 
 		for _, subd := range lslice {
-			if IsTrue(fArg(subd)) {
+			if IsTrue(fArg(ctx, subd)) {
 				return false
 			}
 		}
@@ -1320,11 +1328,6 @@ var DefaultOps = OpsSet{
 
 	mergeOp: buildMergeOp,
 }
-
-// ClauseFunc takes input data, returns a result which
-// could be any valid json type. jsonlogic seems to
-// prefer returning null to returning any specific errors.
-type ClauseFunc func(data interface{}) interface{}
 
 // Compile builds a ClauseFunc that will execute
 // the provided rule against the data.

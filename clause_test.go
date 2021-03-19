@@ -1,6 +1,7 @@
 package jsonlogic
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -38,7 +39,8 @@ func Example() {
 		log.Fatalf("compile failed, %v", err)
 	}
 
-	fmt.Println(cf(data))
+	ctx := context.Background()
+	fmt.Println(cf(ctx, data))
 	// Output: buzz
 }
 
@@ -1011,8 +1013,8 @@ func TestClauseEval(t *testing.T) {
 				} else {
 					assert.NoErrorf(t, err, "compile error")
 				}
-
-				v := cf(st.data)
+				ctx := context.Background()
+				v := cf(ctx, st.data)
 				assert.Equalf(t, st.expect, v, "response data for %v", st.rule)
 			})
 		})
@@ -1020,6 +1022,7 @@ func TestClauseEval(t *testing.T) {
 }
 
 func BenchmarkFizzBuzz(b *testing.B) {
+	ctx := context.Background()
 	b.ReportAllocs()
 	fizzbuzz := `{ "if": [
 								{"==": [ { "%": [ { "var": "i" }, 15 ] }, 0]},
@@ -1047,11 +1050,12 @@ func BenchmarkFizzBuzz(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := b.N; i >= 0; i-- {
-		cf(data)
+		cf(ctx, data)
 	}
 }
 
 func BenchmarkIn(b *testing.B) {
+	ctx := context.Background()
 	b.ReportAllocs()
 	in := `{ "in": ["hello",["world","hello"]] }`
 
@@ -1067,11 +1071,12 @@ func BenchmarkIn(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := b.N; i >= 0; i-- {
-		cf(nil)
+		cf(ctx, nil)
 	}
 }
 
 func TestClause_testsuite(t *testing.T) {
+	ctx := context.Background()
 	tests := []json.RawMessage{}
 
 	bs, err := os.ReadFile("testdata/tests.json")
@@ -1127,7 +1132,7 @@ func TestClause_testsuite(t *testing.T) {
 				return
 			}
 
-			got := cf(data)
+			got := cf(ctx, data)
 
 			if diff := cmp.Diff(exp, got); len(diff) != 0 {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
