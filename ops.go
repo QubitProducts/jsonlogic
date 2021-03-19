@@ -161,8 +161,18 @@ func buildMissingOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 
 	return func(data interface{}) interface{} {
 		resp := []interface{}{}
+		checkItems := []interface{}{}
+
 		for _, ta := range termArgs {
-			lval := ta(data)
+			item := ta(data)
+			if sliceitem, ok := item.([]interface{}); ok {
+				checkItems = append(checkItems, sliceitem...)
+				continue
+			}
+			checkItems = append(checkItems, item)
+		}
+
+		for _, lval := range checkItems {
 			v := DottedRef(data, lval)
 			if v == nil {
 				resp = append(resp, lval)
