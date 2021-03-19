@@ -91,10 +91,6 @@ func toString(i interface{}) string {
 	}
 }
 
-func toBool(i interface{}) bool {
-	return IsTrue(i)
-}
-
 // IsEqual is an exact equality check.
 func IsEqual(l, r interface{}) bool {
 	_, lisfloat := l.(float64)
@@ -122,7 +118,9 @@ func IsEqual(l, r interface{}) bool {
 	case lisslice && risslice:
 		lhdr := (*reflect.SliceHeader)(unsafe.Pointer(&lslice))
 		rhdr := (*reflect.SliceHeader)(unsafe.Pointer(&rslice))
-		return *lhdr == *rhdr
+		return lhdr.Cap == rhdr.Cap &&
+			lhdr.Len == rhdr.Len &&
+			lhdr.Data == rhdr.Data
 	case
 		lisbool && risbool,
 		lisfloat && risfloat,
@@ -161,7 +159,9 @@ func IsSoftEqual(l, r interface{}) bool {
 	case lisslice && risslice:
 		lhdr := (*reflect.SliceHeader)(unsafe.Pointer(&lslice))
 		rhdr := (*reflect.SliceHeader)(unsafe.Pointer(&rslice))
-		return *lhdr == *rhdr
+		return lhdr.Cap == rhdr.Cap &&
+			lhdr.Len == rhdr.Len &&
+			lhdr.Data == rhdr.Data
 	case lisslice || risslice:
 		if lisslice {
 			return IsSoftEqual(toString(l), r)

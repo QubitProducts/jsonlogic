@@ -857,8 +857,6 @@ func buildModuloOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		rVal := toNumber(rArg(data))
 
 		return math.Mod(lVal, rVal)
-
-		panic("modulo disjoint types not implemented")
 	}, nil
 }
 
@@ -1327,14 +1325,6 @@ var DefaultOps = OpsSet{
 // could be any valid json type. jsonlogic seems to
 // prefer returning null to returning any specific errors.
 type ClauseFunc func(data interface{}) interface{}
-
-var ops = map[string]func(args Arguments) ClauseFunc{
-	nullOp: func(args Arguments) ClauseFunc {
-		return func(data interface{}) interface{} {
-			return args[0].Value
-		}
-	},
-}
 
 // Compile builds a ClauseFunc that will execute
 // the provided rule against the data.
