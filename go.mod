@@ -1,4 +1,4 @@
-module github.com/tcolgate/jsonlogic
+module github.com/QubitProducts/jsonlogic
 
 go 1.13
 
