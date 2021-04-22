@@ -59,7 +59,7 @@ const (
 )
 
 // ClauseFunc takes input data, returns a result which
-// could be any valid json type. jsonlogic seems to
+// could be any valid json type. JsonLogic seems to
 // prefer returning null to returning any specific errors.
 // The context argument is not used by any of the standard operations,
 // but may be used by custom operations to provide rich functionality.
@@ -139,7 +139,7 @@ func buildVarOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 			return data
 		}
 
-		// otherise, we assume this is an indexable type.
+		// otherwise, we assume this is an indexable type.
 		switch data := data.(type) {
 		case map[string]interface{}:
 			v := DottedRef(data, indexVal)

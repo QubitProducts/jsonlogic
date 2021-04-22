@@ -5,12 +5,12 @@ import (
 	"fmt"
 )
 
-// Operator repsents a jsonlogic Operator.
+// Operator represents a jsonlogic Operator.
 type Operator struct {
 	Name string
 }
 
-// Argument represnts any valid argument to a jsonlogic
+// Argument represents any valid argument to a jsonlogic
 // operator.
 type Argument struct {
 	Clause *Clause
@@ -75,13 +75,13 @@ func (args *Arguments) UnmarshalJSON(bs []byte) error {
 	return fmt.Errorf("could not parse arguments")
 }
 
-// Clause represents a jsonlogic clause.
+// Clause represents a JsonLogic clause.
 type Clause struct {
 	Operator  Operator
 	Arguments Arguments
 }
 
-// UnmarshalJSON parses JSON data as a jsonlogic
+// UnmarshalJSON parses JSON data as a JsonLogic
 // Clause.
 func (c *Clause) UnmarshalJSON(bs []byte) error {
 	clause := map[string]Arguments{}

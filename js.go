@@ -9,7 +9,7 @@ import (
 	"unsafe"
 )
 
-// IsTrue implements the truthy/falsy semantics of jsonlogic
+// IsTrue implements the truthy/falsy semantics of JsonLogic
 // as documented here: https://jsonlogic.com/truthy.html
 // in addition, an emptry struct is considered true, as
 // per jsonlogic JavaScript handling of "{}"
