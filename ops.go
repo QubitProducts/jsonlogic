@@ -103,8 +103,29 @@ func BuildArgFunc(arg Argument, ops OpsSet) (ClauseFunc, error) {
 }
 
 func buildNullOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
+	if args[0].Clause == nil {
+		return func(ctx context.Context, data interface{}) interface{} {
+			return args[0].Value
+		}, nil
+	}
+
+	var termArgs []ClauseFunc
+	for _, a := range args {
+		termArg, err := BuildArgFunc(a, ops)
+		if err != nil {
+			return nil, err
+		}
+		termArgs = append(termArgs, termArg)
+	}
+
 	return func(ctx context.Context, data interface{}) interface{} {
-		return args[0].Value
+		res := []interface{}{}
+
+		for _, ta := range termArgs {
+			item := ta(ctx, data)
+			res = append(res, item)
+		}
+		return res
 	}, nil
 }
 

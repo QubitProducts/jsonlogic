@@ -43,6 +43,7 @@ func (a *Argument) UnmarshalJSON(bs []byte) error {
 		}
 		return nil
 	}
+
 	var v interface{}
 	vErr := json.Unmarshal(bs, &v)
 	if vErr == nil {
@@ -96,6 +97,15 @@ func (c *Clause) UnmarshalJSON(bs []byte) error {
 			}
 			return nil
 		}
+	}
+
+	argsArr := []Argument{}
+	err = json.Unmarshal(bs, &argsArr)
+	if err == nil && len(argsArr) != 0 {
+		*c = Clause{
+			Arguments: argsArr,
+		}
+		return nil
 	}
 
 	var raw interface{}
