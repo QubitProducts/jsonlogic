@@ -106,6 +106,11 @@ func TestClauseMarshal(t *testing.T) {
 			rule:      `{ "var" : "a" }`,
 			marshalTo: `{"var":["a"]}`,
 		},
+		{
+			name:      "naked-array",
+			rule:      `[{ "var" : "a" }]`,
+			marshalTo: `[{"var":["a"]}]`,
+		},
 	}
 
 	for _, st := range tests {

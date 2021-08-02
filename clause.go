@@ -133,7 +133,11 @@ func (c *Clause) UnmarshalJSON(bs []byte) error {
 func (c Clause) MarshalJSON() ([]byte, error) {
 	switch c.Operator.Name {
 	case "":
-		return json.Marshal(c.Arguments[0].Value)
+		if c.Arguments[0].Clause == nil {
+			return json.Marshal(c.Arguments[0].Value)
+		}
+		// This was an array used as a clause
+		return json.Marshal(c.Arguments)
 	default:
 		return json.Marshal(map[string]Arguments{
 			c.Operator.Name: c.Arguments,
