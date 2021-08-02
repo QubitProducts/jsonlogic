@@ -109,21 +109,21 @@ func buildNullOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		}, nil
 	}
 
-	var termArgs []ClauseFunc
-	for _, a := range args {
+	termArgs := make([]ClauseFunc, len(args))
+	for i, a := range args {
 		termArg, err := BuildArgFunc(a, ops)
 		if err != nil {
 			return nil, err
 		}
-		termArgs = append(termArgs, termArg)
+		termArgs[i] = termArg
 	}
 
 	return func(ctx context.Context, data interface{}) interface{} {
-		res := []interface{}{}
+		res := make([]interface{}, len(termArgs))
 
-		for _, ta := range termArgs {
+		for i, ta := range termArgs {
 			item := ta(ctx, data)
-			res = append(res, item)
+			res[i] = item
 		}
 		return res
 	}, nil
