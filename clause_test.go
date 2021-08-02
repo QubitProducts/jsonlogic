@@ -1148,6 +1148,7 @@ func TestClause_testsuite(t *testing.T) {
 		}
 
 		t.Run(fmt.Sprintf("%d %s[%d]", i, section, sectionEntry), func(t *testing.T) {
+			t.Parallel()
 			var data interface{}
 			err = json.Unmarshal(details[1], &data)
 			if err != nil {
@@ -1180,5 +1181,72 @@ func TestClause_testsuite(t *testing.T) {
 			}
 		})
 		sectionEntry++
+	}
+}
+
+func BenchmarkClause_testsuite(b *testing.B) {
+	// This collates all the official test suite
+	// and then runs them all as a one benchmark.
+	// Running them all individually takes too long.
+	b.ReportAllocs()
+
+	ctx := context.Background()
+
+	tests := []json.RawMessage{}
+
+	bs, err := os.ReadFile("testdata/tests.json")
+	if err != nil {
+		b.Fatalf("could not open testfile, %v", err)
+	}
+	err = json.Unmarshal(bs, &tests)
+	if err != nil {
+		b.Fatalf("could not unmarshal testdata, %v", err)
+	}
+
+	var cfs []ClauseFunc
+	var datas []interface{}
+
+	for i, tline := range tests {
+		i := i
+		var newSection string
+		err = json.Unmarshal(tline, &newSection)
+		if err == nil {
+			continue
+		}
+
+		var details [3]json.RawMessage
+		err = json.Unmarshal(tline, &details)
+		if err != nil {
+			b.Skipf("couldm't unmarshal test case line %d", i)
+		}
+
+		var data interface{}
+		err = json.Unmarshal(details[1], &data)
+		if err != nil {
+			b.Skipf("could not unmarshal test data, %v", err)
+		}
+
+		datas = append(datas, data)
+
+		var cls Clause
+		err = json.Unmarshal(details[0], &cls)
+		if err != nil {
+			b.Errorf("could not unmarshal test clause, %v", err)
+			return
+		}
+
+		cf, err := Compile(&cls)
+		if err != nil {
+			b.Errorf("could not compile test clause, %v", err)
+			return
+		}
+
+		cfs = append(cfs, cf)
+	}
+
+	for i := b.N; i >= 0; i-- {
+		for i, cf := range cfs {
+			cf(ctx, datas[i])
+		}
 	}
 }
