@@ -106,6 +106,11 @@ func TestClauseMarshal(t *testing.T) {
 			rule:      `{ "var" : "a" }`,
 			marshalTo: `{"var":["a"]}`,
 		},
+		{
+			name:      "naked-array",
+			rule:      `[{ "var" : "a" }]`,
+			marshalTo: `[{"var":["a"]}]`,
+		},
 	}
 
 	for _, st := range tests {
@@ -994,6 +999,42 @@ func TestClauseEval(t *testing.T) {
 			rule:   `{"some": [{"merge":[{"var":"rec.name"}]}, {"===":[{"var": ""},"hello"]}]}`,
 			expect: true,
 			data:   map[string]interface{}{"rec": map[string]interface{}{"name": "hello"}},
+		},
+		{
+			name:   "issue#1",
+			rule:   `{"reduce": [ [ {"var":"desserts.apple"}, {"var":"desserts.brownie"}, {"var":"desserts.cupcake"} ], {"+":[ {"var":"accumulator"}, {"var":"current.qty"}]}, 0 ]}`,
+			expect: float64(6),
+			data: map[string]interface{}{
+				"desserts": map[string]interface{}{
+					"apple":   map[string]interface{}{"qty": float64(1)},
+					"brownie": map[string]interface{}{"qty": float64(2)},
+					"cupcake": map[string]interface{}{"qty": float64(3)},
+				},
+			},
+		},
+		{
+			name:   "issue#1.2",
+			rule:   `{"+":[[{"var": "arg"}],2]}`,
+			expect: float64(10),
+			data: map[string]interface{}{
+				"arg": float64(8),
+			},
+		},
+		{
+			name:   "issue#1.3",
+			rule:   `[{"var": "arg"}]`,
+			expect: []interface{}{float64(8)},
+			data: map[string]interface{}{
+				"arg": float64(8),
+			},
+		},
+		{
+			name:   "issue#1.4",
+			rule:   `[{"var": "arg"},{"var": "arg"}]`,
+			expect: []interface{}{float64(8), float64(8)},
+			data: map[string]interface{}{
+				"arg": float64(8),
+			},
 		},
 	}
 
