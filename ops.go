@@ -183,18 +183,17 @@ func buildMissingOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return emptySlice, nil
 	}
 
-	var termArgs []ClauseFunc
-	for _, a := range args {
+	termArgs := make([]ClauseFunc, len(args))
+	for i, a := range args {
 		termArg, err := BuildArgFunc(a, ops)
 		if err != nil {
 			return nil, err
 		}
-		termArgs = append(termArgs, termArg)
+		termArgs[i] = termArg
 	}
 
 	return func(ctx context.Context, data interface{}) interface{} {
-		resp := []interface{}{}
-		checkItems := []interface{}{}
+		checkItems := make([]interface{}, 0, len(termArgs))
 
 		for _, ta := range termArgs {
 			item := ta(ctx, data)
@@ -205,12 +204,18 @@ func buildMissingOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 			checkItems = append(checkItems, item)
 		}
 
+		resp := make([]interface{}, len(checkItems))
+
+		n := 0
 		for _, lval := range checkItems {
 			v := DottedRef(data, lval)
 			if v == nil {
-				resp = append(resp, lval)
+				resp[n] = lval
+				n++
 			}
 		}
+		resp = resp[:n]
+
 		return resp
 	}, nil
 }
@@ -231,28 +236,31 @@ func buildMissingSomeOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 	}
 
 	return func(ctx context.Context, data interface{}) interface{} {
-		resp := []interface{}{}
 		required := requiredArg(ctx, data)
 		requiredfloat, ok := required.(float64)
 		if !ok {
-			return resp
+			return []interface{}{}
 		}
 
 		terms := termsArg(ctx, data)
 		termsslice, ok := terms.([]interface{})
 		if !ok {
-			return resp
+			return []interface{}{}
 		}
 
+		resp := make([]interface{}, len(termsslice))
 		found := float64(0)
+		n := 0
 		for _, ta := range termsslice {
 			v := DottedRef(data, ta)
 			if v != nil {
 				found++
 				continue
 			}
-			resp = append(resp, ta)
+			resp[n] = ta
+			n++
 		}
+		resp = resp[:n]
 		if found >= requiredfloat {
 			return []interface{}{}
 		}
@@ -293,13 +301,13 @@ func buildIfOp3(args Arguments, ops OpsSet) (ClauseFunc, error) {
 }
 
 func buildIfOpMulti(args Arguments, ops OpsSet) (ClauseFunc, error) {
-	var termArgs []ClauseFunc
-	for _, a := range args {
+	termArgs := make([]ClauseFunc, len(args))
+	for i, a := range args {
 		termArg, err := BuildArgFunc(a, ops)
 		if err != nil {
 			return nil, err
 		}
-		termArgs = append(termArgs, termArg)
+		termArgs[i] = termArg
 	}
 
 	return func(ctx context.Context, data interface{}) interface{} {
@@ -371,13 +379,13 @@ func buildAndOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nullf, nil
 	}
 
-	var termArgs []ClauseFunc
-	for _, ta := range args {
+	termArgs := make([]ClauseFunc, len(args))
+	for i, ta := range args {
 		termArg, err := BuildArgFunc(ta, ops)
 		if err != nil {
 			return nil, err
 		}
-		termArgs = append(termArgs, termArg)
+		termArgs[i] = termArg
 	}
 
 	return func(ctx context.Context, data interface{}) interface{} {
@@ -397,13 +405,13 @@ func buildOrOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nullf, nil
 	}
 
-	var termArgs []ClauseFunc
-	for _, ta := range args {
+	termArgs := make([]ClauseFunc, len(args))
+	for i, ta := range args {
 		termArg, err := BuildArgFunc(ta, ops)
 		if err != nil {
 			return nil, err
 		}
-		termArgs = append(termArgs, termArg)
+		termArgs[i] = termArg
 	}
 
 	return func(ctx context.Context, data interface{}) interface{} {
@@ -621,13 +629,13 @@ func buildMaxOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nullf, nil
 	}
 
-	var termArgs []ClauseFunc
-	for _, a := range args {
+	termArgs := make([]ClauseFunc, len(args))
+	for i, a := range args {
 		termArg, err := BuildArgFunc(a, ops)
 		if err != nil {
 			return nil, err
 		}
-		termArgs = append(termArgs, termArg)
+		termArgs[i] = termArg
 	}
 
 	return func(ctx context.Context, data interface{}) interface{} {
@@ -651,13 +659,13 @@ func buildMinOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nullf, nil
 	}
 
-	var termArgs []ClauseFunc
-	for _, a := range args {
+	termArgs := make([]ClauseFunc, len(args))
+	for i, a := range args {
 		termArg, err := BuildArgFunc(a, ops)
 		if err != nil {
 			return nil, err
 		}
-		termArgs = append(termArgs, termArg)
+		termArgs[i] = termArg
 	}
 
 	return func(ctx context.Context, data interface{}) interface{} {
@@ -745,13 +753,13 @@ func buildDoubleNegateOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 }
 
 func buildPlusOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
-	var termArgs []ClauseFunc
-	for _, a := range args {
+	termArgs := make([]ClauseFunc, len(args))
+	for i, a := range args {
 		termArg, err := BuildArgFunc(a, ops)
 		if err != nil {
 			return nil, err
 		}
-		termArgs = append(termArgs, termArg)
+		termArgs[i] = termArg
 	}
 
 	return func(ctx context.Context, data interface{}) interface{} {
@@ -791,13 +799,13 @@ func buildMinusOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return buildUnaryMinusOp(args, ops)
 	}
 
-	var termArgs []ClauseFunc
-	for _, a := range args {
+	termArgs := make([]ClauseFunc, len(args))
+	for i, a := range args {
 		termArg, err := BuildArgFunc(a, ops)
 		if err != nil {
 			return nil, err
 		}
-		termArgs = append(termArgs, termArg)
+		termArgs[i] = termArg
 	}
 
 	return func(ctx context.Context, data interface{}) interface{} {
@@ -823,13 +831,13 @@ func buildMultiplyOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return nullf, nil
 	}
 
-	var termArgs []ClauseFunc
-	for _, a := range args {
+	termArgs := make([]ClauseFunc, len(args))
+	for i, a := range args {
 		termArg, err := BuildArgFunc(a, ops)
 		if err != nil {
 			return nil, err
 		}
-		termArgs = append(termArgs, termArg)
+		termArgs[i] = termArg
 	}
 
 	return func(ctx context.Context, data interface{}) interface{} {
@@ -895,17 +903,17 @@ func buildMergeOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 		return emptySlice, nil
 	}
 
-	var termArgs []ClauseFunc
-	for _, a := range args {
+	termArgs := make([]ClauseFunc, len(args))
+	for i, a := range args {
 		termArg, err := BuildArgFunc(a, ops)
 		if err != nil {
 			return nil, err
 		}
-		termArgs = append(termArgs, termArg)
+		termArgs[i] = termArg
 	}
 
 	return func(ctx context.Context, data interface{}) interface{} {
-		resp := []interface{}{}
+		resp := make([]interface{}, 0, len(termArgs))
 		for _, ta := range termArgs {
 			item := ta(ctx, data)
 			sliceitem, ok := item.([]interface{})
@@ -966,13 +974,13 @@ func buildInOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 }
 
 func buildCatOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
-	var termArgs []ClauseFunc
-	for _, a := range args {
+	termArgs := make([]ClauseFunc, len(args))
+	for i, a := range args {
 		termArg, err := BuildArgFunc(a, ops)
 		if err != nil {
 			return nil, err
 		}
-		termArgs = append(termArgs, termArg)
+		termArgs[i] = termArg
 	}
 
 	return func(ctx context.Context, data interface{}) interface{} {
@@ -1141,13 +1149,16 @@ func buildFilterOp(args Arguments, ops OpsSet) (ClauseFunc, error) {
 			return []interface{}{}
 		}
 
-		resp := []interface{}{}
+		resp := make([]interface{}, len(lslice))
 
+		n := 0
 		for _, subd := range lslice {
 			if IsTrue(rArg(ctx, subd)) {
-				resp = append(resp, subd)
+				resp[n] = subd
+				n++
 			}
 		}
+		resp = resp[:n]
 
 		return resp
 	}, nil
