@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    kube-ci.qutics.com/cacheScope: project
+    kube-ci.qutics.com/cacheSize: 20Gi
+  creationTimestamp: null
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: test
+        templateRef: 
+          name: cloud-test
+          template: test-go-1-19
+        arguments:
+          parameters:
+          - name: args
+            value: go test -p 1 -timeout 60s ./...
+  volumes:
+  - name: secrets
+    secret:
+      secretName: ci-secrets
+  - name: build-cache
+    persistentVolumeClaim:
+      claimName: '{{workflow.parameters.cacheVolumeClaimName}}'
+status:
+  finishedAt: null
+  startedAt: null
